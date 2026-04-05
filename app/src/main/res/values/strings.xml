@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">wuganjizhang</string>
+    <string name="app_name">无感记账</string>
+    <string name="accessibility_service_description">无感记账使用无障碍服务来识别微信和支付宝的支付完成界面，从而自动记录交易信息。所有数据仅在本地处理，不会上传到网络。</string>
 </resources>
