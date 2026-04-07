@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom color attributes -->
+    <attr name="colorBackground" format="color" />
+    <attr name="colorCard" format="color" />
+    <attr name="colorText" format="color" />
+    <attr name="colorText2" format="color" />
+    <attr name="colorText3" format="color" />
+    <attr name="colorBorder" format="color" />
+    <attr name="colorSuccess" format="color" />
+    <attr name="colorDanger" format="color" />
+    <attr name="colorWarning" format="color" />
+    <attr name="colorPrimaryBg" format="color" />
+    <attr name="colorIconBackground" format="color" />
+    <attr name="colorExpense" format="color" />
+</resources>

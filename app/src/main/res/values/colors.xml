@@ -1,5 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primary colors -->
+    <color name="primary">#4F6EF7</color>
+    <color name="primary_light">#6B85F9</color>
+    <color name="primary_bg">#EEF1FE</color>
+    
+    <!-- Teal colors for Material theme -->
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+
+    <!-- Success, danger, warning -->
+    <color name="success">#22C55E</color>
+    <color name="danger">#EF4444</color>
+    <color name="warning">#F59E0B</color>
+    
+    <!-- Background and card -->
+    <color name="bg">#F5F5F7</color>
+    <color name="card">#FFFFFF</color>
+    
+    <!-- Text colors -->
+    <color name="text">#1A1A2E</color>
+    <color name="text2">#6B7280</color>
+    <color name="text3">#9CA3AF</color>
+    
+    <!-- Border and shadow -->
+    <color name="border">#E5E7EB</color>
+    
+    <!-- Icon and expense colors -->
+    <color name="icon_background">#F3F4F6</color>
+    <color name="expense">#EF4444</color>
+
+    <!-- Dark theme colors -->
+    <color name="dark_bg">#0F0F14</color>
+    <color name="dark_card">#1A1A24</color>
+    <color name="dark_text">#E5E7EB</color>
+    <color name="dark_text2">#9CA3AF</color>
+    <color name="dark_text3">#6B7280</color>
+    <color name="dark_border">#374151</color>
+    <color name="dark_primary_bg">#1e2440</color>
 </resources>
