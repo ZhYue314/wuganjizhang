@@ -51,6 +51,7 @@ fun AddTransactionSheet(
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true // 跳过部分展开，直接全屏
     )
+    val coroutineScope = rememberCoroutineScope()
     
     // 只在首次显示时展开，避免重复动画
     LaunchedEffect(Unit) {
@@ -61,7 +62,8 @@ fun AddTransactionSheet(
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             viewModel.resetForm()
-            onDismiss() // 先通知父组件关闭
+            sheetState.hide() // 先执行下滑动画
+            onDismiss() // 再通知父组件关闭
         }
     }
 
@@ -76,8 +78,7 @@ fun AddTransactionSheet(
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp)
         ) {
             // 自定义顶栏：取消 | 保存
             Row(
@@ -86,7 +87,12 @@ fun AddTransactionSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = onDismiss,
+                    onClick = {
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFF6B6B)
                     )
@@ -94,7 +100,11 @@ fun AddTransactionSheet(
                     Text("取消", color = Color.White)
                 }
                 Button(
-                    onClick = viewModel::saveTransaction,
+                    onClick = {
+                        if (!uiState.isLoading) {
+                            viewModel.saveTransaction()
+                        }
+                    },
                     enabled = !uiState.isLoading
                 ) {
                     if (uiState.isLoading) {
@@ -113,6 +123,19 @@ fun AddTransactionSheet(
                 selectedType = uiState.selectedType,
                 onTypeChanged = viewModel::updateType
             )
+
+            // 内容区域 - 添加切换动画
+            AnimatedContent(
+                targetState = uiState.selectedType,
+                transitionSpec = {
+                    slideInHorizontally { width -> width } + fadeIn() togetherWith
+                    slideOutHorizontally { width -> -width } + fadeOut()
+                },
+                label = "ContentType"
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
 
             // 金额输入
             AmountInput(
@@ -197,7 +220,9 @@ fun AddTransactionSheet(
             
             // 占据剩余空间，确保填满屏幕
             Spacer(modifier = Modifier.weight(1f))
-        } // Column 结束
+                } // AnimatedContent 的 Column 结束
+            } // AnimatedContent 结束
+        } // 外层 Column 结束
     } // ModalBottomSheet 结束
 
     // 账户选择对话框
@@ -246,29 +271,15 @@ fun TypeSelector(
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                AnimatedContent(
-                    targetState = isSelected,
-                    transitionSpec = {
-                        if (targetState) {
-                            slideInHorizontally { width -> width } + fadeIn() togetherWith
-                            slideOutHorizontally { width -> -width } + fadeOut()
-                        } else {
-                            slideInHorizontally { width -> -width } + fadeIn() togetherWith
-                            slideOutHorizontally { width -> width } + fadeOut()
-                        }
-                    },
-                    label = "TypeSelection"
-                ) { selected ->
-                    Text(
-                        text = label,
-                        color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
+                Text(
+                    text = label,
+                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
             }
         }
     }
