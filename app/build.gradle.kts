@@ -83,6 +83,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
     
     // Legacy View components (for transition)
     implementation(libs.recyclerview)
