@@ -37,4 +37,5 @@ val DarkColorScheme = darkColorScheme(
 // 自定义颜色
 val ExpenseColor = Color(0xFFEF4444)
 val IncomeColor = Color(0xFF22C55E)
+val TransferColor = Color(0xFF2196F3)
 val WarningColor = Color(0xFFF59E0B)

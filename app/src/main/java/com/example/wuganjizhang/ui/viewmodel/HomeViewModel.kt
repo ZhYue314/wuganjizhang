@@ -1,8 +1,13 @@
 package com.example.wuganjizhang.ui.viewmodel
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wuganjizhang.data.local.dao.AccountDao
+import com.example.wuganjizhang.data.local.dao.CategoryDao
 import com.example.wuganjizhang.data.local.dao.TransactionDao
+import com.example.wuganjizhang.model.Account
+import com.example.wuganjizhang.model.Category
 import com.example.wuganjizhang.model.Transaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +29,9 @@ data class HomeUiState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val categoryDao: CategoryDao,
+    private val accountDao: AccountDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -105,6 +112,29 @@ class HomeViewModel @Inject constructor(
             transactionDao.softDelete(transaction.id)
         }
     }
+    
+    /**
+     * 更新交易
+     */
+    fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            transactionDao.update(transaction)
+        }
+    }
+    
+    /**
+     * 获取所有启用的分类（根据类型）
+     */
+    fun getCategoriesByType(type: String): LiveData<List<Category>> {
+        return categoryDao.getCategoriesByType(type)
+    }
+    
+    /**
+     * 获取所有启用的账户
+     */
+    fun getEnabledAccounts(): LiveData<List<Account>> {
+        return accountDao.getEnabledAccountsLive()
+    }
 
     /**
      * 获取月份起始时间戳
@@ -122,7 +152,7 @@ class HomeViewModel @Inject constructor(
      * 格式化金额
      */
     fun formatAmount(amount: Double): String {
-        return String.format("¥%.2f", amount)
+        return String.format("%.2f", amount)
     }
 
     /**

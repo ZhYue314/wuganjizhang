@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,8 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -36,8 +39,10 @@ import kotlinx.coroutines.launch
 import com.example.wuganjizhang.model.Account
 import com.example.wuganjizhang.model.Category
 import com.example.wuganjizhang.ui.viewmodel.AddTransactionViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddTransactionSheet(
     isVisible: Boolean,
@@ -48,10 +53,66 @@ fun AddTransactionSheet(
     
     val uiState by viewModel.uiState.collectAsState()
     var showAccountPicker by remember { mutableStateOf(false) }
+    var showDateTimePicker by remember { mutableStateOf(false) }  // 日期时间选择器
+    var showMerchantDialog by remember { mutableStateOf(false) }  // 商户输入对话框
+    var showRemarkDialog by remember { mutableStateOf(false) }  // 备注输入对话框
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true // 跳过部分展开，直接全屏
     )
     val coroutineScope = rememberCoroutineScope()
+    
+    // 标记是否是由用户点击引起的滚动，避免循环触发
+    var isUserClick by remember { mutableStateOf(false) }
+    var isResetting by remember { mutableStateOf(false) } // 标记是否正在重置
+    
+    // 创建 Pager 状态，根据类型索引设置初始页
+    val typeIndex = when (uiState.selectedType) {
+        "expense" -> 0
+        "income" -> 1
+        "transfer" -> 2
+        else -> 0
+    }
+    val pagerState = rememberPagerState(
+        initialPage = typeIndex,
+        pageCount = { 3 }
+    )
+    
+    // 同步 Pager 滑动与 ViewModel 状态 - 只在非用户点击时更新
+    LaunchedEffect(pagerState.currentPage) {
+        // 如果不是用户点击引起的，才更新 ViewModel
+        if (!isUserClick && pagerState.isScrollInProgress.not()) {
+            val newType = when (pagerState.currentPage) {
+                0 -> "expense"
+                1 -> "income"
+                2 -> "transfer"
+                else -> "expense"
+            }
+            if (newType != uiState.selectedType) {
+                viewModel.updateType(newType)
+            }
+        }
+        // 延迟重置标志，确保动画完成
+        if (isUserClick) {
+            kotlinx.coroutines.delay(350)
+            isUserClick = false
+        }
+    }
+    
+    // 同步 ViewModel 状态变化到 Pager
+    LaunchedEffect(uiState.selectedType) {
+        // 如果是重置或用户点击引起的，不跳转页面
+        if (!isResetting && !isUserClick) {
+            val targetPage = when (uiState.selectedType) {
+                "expense" -> 0
+                "income" -> 1
+                "transfer" -> 2
+                else -> 0
+            }
+            if (pagerState.currentPage != targetPage) {
+                pagerState.animateScrollToPage(targetPage)
+            }
+        }
+    }
     
     // 只在首次显示时展开，避免重复动画
     LaunchedEffect(Unit) {
@@ -61,9 +122,12 @@ fun AddTransactionSheet(
     // 保存成功后关闭
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            viewModel.resetForm()
+            isResetting = true // 标记开始重置
             sheetState.hide() // 先执行下滑动画
             onDismiss() // 再通知父组件关闭
+            viewModel.resetForm() // 最后重置表单
+            kotlinx.coroutines.delay(100) // 等待一下
+            isResetting = false // 重置完成
         }
     }
 
@@ -88,6 +152,8 @@ fun AddTransactionSheet(
             ) {
                 Button(
                     onClick = {
+                        viewModel.clearError() // 清除错误状态
+                        viewModel.resetForm() // 重置表单（会清除编辑模式）
                         coroutineScope.launch {
                             sheetState.hide()
                             onDismiss()
@@ -99,9 +165,18 @@ fun AddTransactionSheet(
                 ) {
                     Text("取消", color = Color.White)
                 }
+                
+                // 根据编辑模式显示不同标题
+                Text(
+                    text = if (uiState.isEditMode) "编辑交易" else "添加交易",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
                 Button(
                     onClick = {
                         if (!uiState.isLoading) {
+                            viewModel.clearError() // 点击保存时清除错误状态
                             viewModel.saveTransaction()
                         }
                     },
@@ -113,115 +188,225 @@ fun AddTransactionSheet(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("保存")
+                        Text(if (uiState.isEditMode) "更新" else "保存")
                     }
                 }
             }
 
-            // 类型切换
+            // 类型切换 - 支持滑动
             TypeSelector(
                 selectedType = uiState.selectedType,
-                onTypeChanged = viewModel::updateType
-            )
-
-            // 内容区域 - 添加切换动画
-            AnimatedContent(
-                targetState = uiState.selectedType,
-                transitionSpec = {
-                    slideInHorizontally { width -> width } + fadeIn() togetherWith
-                    slideOutHorizontally { width -> -width } + fadeOut()
-                },
-                label = "ContentType"
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-
-            // 金额输入
-            AmountInput(
-                amount = uiState.amount,
-                onAmountChanged = viewModel::updateAmount,
-                error = if (uiState.error == "请输入有效金额") uiState.error else null
-            )
-
-            // 分类选择（转账时不显示）
-            if (uiState.selectedType != "transfer") {
-                CategoryGrid(
-                    categories = uiState.categories,
-                    selectedCategory = uiState.selectedCategory,
-                    onCategorySelected = viewModel::selectCategory,
-                    showError = uiState.error == "请选择分类"
-                )
-            }
-
-            // 账户选择
-            AccountSelector(
-                accounts = uiState.accounts,
-                selectedAccount = uiState.selectedAccount,
-                onSelectAccount = { showAccountPicker = true }
-            )
-
-            // 商户名称
-            OutlinedTextField(
-                value = uiState.merchant,
-                onValueChange = viewModel::updateMerchant,
-                label = { Text("商户名称") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            // 备注
-            OutlinedTextField(
-                value = uiState.remark,
-                onValueChange = viewModel::updateRemark,
-                label = { Text("备注") },
-                modifier = Modifier.fillMaxWidth(),
-                maxLines = 3
-            )
-
-            // 其他错误提示（非分类错误）
-            uiState.error?.let { error ->
-                if (error != "请选择分类" && error != "请输入有效金额") {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(20.dp)
+                onTypeChanged = { newType ->
+                    viewModel.updateType(newType)
+                    
+                    val targetPage = when (newType) {
+                        "expense" -> 0
+                        "income" -> 1
+                        "transfer" -> 2
+                        else -> 0
+                    }
+                    isUserClick = true
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(
+                            page = targetPage,
+                            animationSpec = androidx.compose.animation.core.tween(
+                                durationMillis = 250,
+                                easing = androidx.compose.animation.core.FastOutSlowInEasing
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                        )
+                    }
+                },
+                pagerState = pagerState
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 分类选择区域 - 使用 HorizontalPager 只切换分类
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp)  // 增加高度，为分类提供更多空间
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth(),
+                    userScrollEnabled = true,
+                    pageSpacing = 0.dp
+                ) { page ->
+                    val pageCategories = when (page) {
+                        0 -> uiState.expenseCategories
+                        1 -> uiState.incomeCategories
+                        else -> emptyList()
+                    }
+                    
+                    if (pageCategories.isNotEmpty()) {
+                        CategoryGrid(
+                            categories = pageCategories,
+                            selectedCategory = uiState.selectedCategory,
+                            onCategorySelected = viewModel::selectCategory,
+                            showError = false
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             Text(
-                                text = error,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
+                                text = "💸",
+                                style = MaterialTheme.typography.displaySmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "转账",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                 }
             }
 
-            // 转账时添加底部空白，防止页面上移
-            if (uiState.selectedType == "transfer") {
-                Spacer(modifier = Modifier.height(200.dp))
-            } else {
-                Spacer(modifier = Modifier.height(16.dp))
+            // 金额输入框
+            Spacer(modifier = Modifier.height(12.dp))
+            AmountInput(
+                amount = uiState.amount,
+                onAmountChanged = viewModel::updateAmount,
+                error = if (uiState.error == "请输入有效金额") uiState.error else null
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 账户、商户、备注、时间 - 超紧凑点击式布局（放在键盘上方）
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // 账户选择（占25%）- 只显示名称
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showAccountPicker = true }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "账户",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = uiState.selectedAccount?.name ?: "选择",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                    
+                    // 商户（占25%）- 点击弹出输入框
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showMerchantDialog = true }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "商户",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = if (uiState.merchant.isNotBlank()) uiState.merchant else "添加",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = if (uiState.merchant.isNotBlank()) FontWeight.Medium else FontWeight.Normal,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                    
+                    // 备注（占25%）- 点击弹出输入框
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showRemarkDialog = true }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "备注",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = if (uiState.remark.isNotBlank()) uiState.remark else "添加",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = if (uiState.remark.isNotBlank()) FontWeight.Medium else FontWeight.Normal,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                    
+                    // 时间（占25%）- 只显示日期
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showDateTimePicker = true }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "时间",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = formatDateShort(uiState.timestamp),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
             }
             
-            // 占据剩余空间，确保填满屏幕
-            Spacer(modifier = Modifier.weight(1f))
-                } // AnimatedContent 的 Column 结束
-            } // AnimatedContent 结束
+            // 数字键盘（与辅助信息间隔1dp）
+            Spacer(modifier = Modifier.height(1.dp))
+            NumericKeyboard(
+                onDigitClick = viewModel::appendDigit,
+                onDeleteClick = viewModel::deleteLastDigit
+            )
         } // 外层 Column 结束
     } // ModalBottomSheet 结束
 
@@ -232,17 +417,93 @@ fun AddTransactionSheet(
             selectedAccount = uiState.selectedAccount,
             onAccountSelected = { account ->
                 viewModel.selectAccount(account)
-                showAccountPicker = false
+                coroutineScope.launch {
+                    showAccountPicker = false
+                }
             },
-            onDismiss = { showAccountPicker = false }
+            onDismiss = {
+                coroutineScope.launch {
+                    showAccountPicker = false
+                }
+            }
+        )
+    }
+    
+    // 日期时间选择对话框
+    if (showDateTimePicker) {
+        DateTimePickerDialog(
+            initialTimestamp = uiState.timestamp,
+            onDateTimeSelected = { newTimestamp ->
+                viewModel.updateTimestamp(newTimestamp)
+                showDateTimePicker = false
+            },
+            onDismiss = {
+                showDateTimePicker = false
+            }
+        )
+    }
+    
+    // 商户输入对话框
+    if (showMerchantDialog) {
+        AlertDialog(
+            onDismissRequest = { showMerchantDialog = false },
+            title = { Text("商户名称") },
+            text = {
+                OutlinedTextField(
+                    value = uiState.merchant,
+                    onValueChange = viewModel::updateMerchant,
+                    label = { Text("输入商户名称") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showMerchantDialog = false }) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMerchantDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+    
+    // 备注输入对话框
+    if (showRemarkDialog) {
+        AlertDialog(
+            onDismissRequest = { showRemarkDialog = false },
+            title = { Text("备注") },
+            text = {
+                OutlinedTextField(
+                    value = uiState.remark,
+                    onValueChange = viewModel::updateRemark,
+                    label = { Text("输入备注") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showRemarkDialog = false }) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemarkDialog = false }) {
+                    Text("取消")
+                }
+            }
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TypeSelector(
     selectedType: String,
-    onTypeChanged: (String) -> Unit
+    onTypeChanged: (String) -> Unit,
+    pagerState: androidx.compose.foundation.pager.PagerState
 ) {
     val types = listOf(
         Triple("expense", "支出", Color(0xFFFF6B6B)),
@@ -250,39 +511,117 @@ fun TypeSelector(
         Triple("transfer", "转账", Color(0xFF2196F3))
     )
     
-    Row(
+    // 计算滑动偏移
+    val currentPage = pagerState.currentPage
+    val currentPageOffset = pagerState.currentPageOffsetFraction
+    
+    // 计算当前和下一个页面的颜色
+    val currentColor = when (currentPage) {
+        0 -> types[0].third
+        1 -> types[1].third
+        2 -> types[2].third
+        else -> types[0].third
+    }
+    
+    val nextColor = when {
+        currentPageOffset < 0 && currentPage > 0 -> {
+            when (currentPage - 1) {
+                0 -> types[0].third
+                1 -> types[1].third
+                2 -> types[2].third
+                else -> types[0].third
+            }
+        }
+        currentPageOffset > 0 && currentPage < 2 -> {
+            when (currentPage + 1) {
+                0 -> types[0].third
+                1 -> types[1].third
+                2 -> types[2].third
+                else -> types[0].third
+            }
+        }
+        else -> currentColor
+    }
+    
+    // 计算渐变比例
+    val fraction = Math.abs(currentPageOffset).coerceIn(0f, 1f)
+    
+    // 混合颜色 - 真正的颜色渐变
+    val blendedColor = lerpColor(currentColor, nextColor, fraction)
+    
+    // 使用 Box 实现滑动背景效果
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(
                 MaterialTheme.colorScheme.surfaceVariant,
                 RoundedCornerShape(12.dp)
             )
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+            .padding(4.dp)
     ) {
-        types.forEach { (type, label, activeColor) ->
-            val isSelected = selectedType == type
-            Card(
+        // 滑动的彩色背景块
+        val indicatorWidthPercent = 1f / types.size
+        
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            // 滑动背景指示器 - 使用 animateContentSize 实现平滑移动
+            val offsetFraction = currentPage + currentPageOffset
+            
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .clickable { onTypeChanged(type) },
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) activeColor else Color.Transparent
-                ),
-                shape = RoundedCornerShape(8.dp)
+                    .fillMaxHeight()
+                    .fillMaxWidth(indicatorWidthPercent)
+                    .graphicsLayer {
+                        translationX = offsetFraction * size.width
+                    }
+                    .background(
+                        blendedColor,
+                        RoundedCornerShape(8.dp)
+                    )
+            )
+            
+            // 按钮层
+            Row(
+                modifier = Modifier
+                    .fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(
-                    text = label,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                types.forEachIndexed { index, (type, label, _) ->
+                    val isSelected = selectedType == type
+                    
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onTypeChanged(type) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+// 颜色线性插值函数
+fun lerpColor(start: Color, end: Color, fraction: Float): Color {
+    return Color(
+        red = start.red + (end.red - start.red) * fraction,
+        green = start.green + (end.green - start.green) * fraction,
+        blue = start.blue + (end.blue - start.blue) * fraction,
+        alpha = start.alpha + (end.alpha - start.alpha) * fraction
+    )
 }
 
 @Composable
@@ -446,7 +785,6 @@ fun CategoryItem(
 
 @Composable
 fun AccountSelector(
-    accounts: List<Account>,
     selectedAccount: Account?,
     onSelectAccount: () -> Unit
 ) {
@@ -460,6 +798,7 @@ fun AccountSelector(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
+
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -547,4 +886,226 @@ fun AccountPickerDialog(
             }
         }
     )
+}
+
+@Composable
+fun DateTimePickerDialog(
+    initialTimestamp: Long,
+    onDateTimeSelected: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = initialTimestamp
+    
+    var selectedYear by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
+    var selectedMonth by remember { mutableStateOf(calendar.get(Calendar.MONTH)) }
+    var selectedDay by remember { mutableStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
+    var selectedHour by remember { mutableStateOf(calendar.get(Calendar.HOUR_OF_DAY)) }
+    var selectedMinute by remember { mutableStateOf(calendar.get(Calendar.MINUTE)) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择日期时间") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                // 日期选择
+                Text(
+                    text = "日期",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 年份
+                    OutlinedTextField(
+                        value = selectedYear.toString(),
+                        onValueChange = { 
+                            if (it.length <= 4) {
+                                selectedYear = it.toIntOrNull() ?: selectedYear
+                            }
+                        },
+                        label = { Text("年") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    
+                    // 月份
+                    OutlinedTextField(
+                        value = (selectedMonth + 1).toString(),
+                        onValueChange = { 
+                            val month = it.toIntOrNull()
+                            if (month != null && month in 1..12) {
+                                selectedMonth = month - 1
+                            }
+                        },
+                        label = { Text("月") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    
+                    // 日
+                    OutlinedTextField(
+                        value = selectedDay.toString(),
+                        onValueChange = { 
+                            val day = it.toIntOrNull()
+                            if (day != null && day in 1..31) {
+                                selectedDay = day
+                            }
+                        },
+                        label = { Text("日") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 时间选择
+                Text(
+                    text = "时间",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 小时
+                    OutlinedTextField(
+                        value = selectedHour.toString().padStart(2, '0'),
+                        onValueChange = { 
+                            val hour = it.toIntOrNull()
+                            if (hour != null && hour in 0..23) {
+                                selectedHour = hour
+                            }
+                        },
+                        label = { Text("时") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    
+                    // 分钟
+                    OutlinedTextField(
+                        value = selectedMinute.toString().padStart(2, '0'),
+                        onValueChange = { 
+                            val minute = it.toIntOrNull()
+                            if (minute != null && minute in 0..59) {
+                                selectedMinute = minute
+                            }
+                        },
+                        label = { Text("分") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "预览: ${formatPreview(selectedYear, selectedMonth, selectedDay, selectedHour, selectedMinute)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val newCalendar = Calendar.getInstance()
+                newCalendar.set(selectedYear, selectedMonth, selectedDay, selectedHour, selectedMinute, 0)
+                newCalendar.set(Calendar.MILLISECOND, 0)
+                onDateTimeSelected(newCalendar.timeInMillis)
+            }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+private fun formatDateTime(timestamp: Long): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA)
+    return dateFormat.format(Date(timestamp))
+}
+
+private fun formatDateShort(timestamp: Long): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA)
+    return dateFormat.format(Date(timestamp))
+}
+
+private fun formatPreview(year: Int, month: Int, day: Int, hour: Int, minute: Int): String {
+    return String.format("%04d-%02d-%02d %02d:%02d", year, month + 1, day, hour, minute)
+}
+
+@Composable
+fun NumericKeyboard(
+    onDigitClick: (String) -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    val keys = listOf(
+        listOf("1", "2", "3"),
+        listOf("4", "5", "6"),
+        listOf("7", "8", "9"),
+        listOf(".", "0", "⌫")
+    )
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp)
+        ) {
+            keys.forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    row.forEach { key ->
+                        Button(
+                            onClick = {
+                                when (key) {
+                                    "⌫" -> onDeleteClick()
+                                    else -> onDigitClick(key)
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (key == "⌫") 
+                                    MaterialTheme.colorScheme.errorContainer 
+                                else 
+                                    MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = key,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = if (key == "⌫") 
+                                    MaterialTheme.colorScheme.onErrorContainer 
+                                else 
+                                    MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
 }

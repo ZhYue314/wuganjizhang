@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.activity)
     implementation(libs.compose.lifecycle)
+    implementation(libs.compose.runtime.livedata)
     
     // Navigation
     implementation(libs.navigation.compose)
@@ -84,6 +85,13 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+    
+    // Accompanist
+    implementation(libs.accompanist.swiperefresh)
+    
+    // Vico Charts
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
     
     // Legacy View components (for transition)
     implementation(libs.recyclerview)
