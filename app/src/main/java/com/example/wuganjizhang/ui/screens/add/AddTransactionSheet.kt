@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -142,133 +143,150 @@ fun AddTransactionSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
         ) {
-            // 自定义顶栏：取消 | 保存
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // 上方区域：顶栏 + 类型切换 + 分类 (占55%)
+            Column(
+                modifier = Modifier
+                    .weight(0.55f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
             ) {
-                Button(
-                    onClick = {
-                        viewModel.clearError() // 清除错误状态
-                        viewModel.resetForm() // 重置表单（会清除编辑模式）
+                // 顶部间距：5%屏幕高度
+                val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+                Spacer(modifier = Modifier.height(screenHeight * 0.05f))
+                
+                // 自定义顶栏：取消 | 保存
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.clearError() // 清除错误状态
+                            viewModel.resetForm() // 重置表单（会清除编辑模式）
+                            coroutineScope.launch {
+                                sheetState.hide()
+                                onDismiss()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF6B6B)
+                        )
+                    ) {
+                        Text("取消", color = Color.White)
+                    }
+                    
+                    // 根据编辑模式显示不同标题
+                    Text(
+                        text = if (uiState.isEditMode) "编辑交易" else "添加交易",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Button(
+                        onClick = {
+                            if (!uiState.isLoading) {
+                                viewModel.clearError() // 点击保存时清除错误状态
+                                viewModel.saveTransaction()
+                            }
+                        },
+                        enabled = !uiState.isLoading
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(if (uiState.isEditMode) "更新" else "保存")
+                        }
+                    }
+                }
+
+                // 类型切换 - 支持滑动
+                TypeSelector(
+                    selectedType = uiState.selectedType,
+                    onTypeChanged = { newType ->
+                        viewModel.updateType(newType)
+                        
+                        val targetPage = when (newType) {
+                            "expense" -> 0
+                            "income" -> 1
+                            "transfer" -> 2
+                            else -> 0
+                        }
+                        isUserClick = true
                         coroutineScope.launch {
-                            sheetState.hide()
-                            onDismiss()
+                            pagerState.animateScrollToPage(
+                                page = targetPage,
+                                animationSpec = androidx.compose.animation.core.tween(
+                                    durationMillis = 250,
+                                    easing = androidx.compose.animation.core.FastOutSlowInEasing
+                                )
+                            )
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF6B6B)
-                    )
-                ) {
-                    Text("取消", color = Color.White)
-                }
-                
-                // 根据编辑模式显示不同标题
-                Text(
-                    text = if (uiState.isEditMode) "编辑交易" else "添加交易",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    pagerState = pagerState
                 )
                 
-                Button(
-                    onClick = {
-                        if (!uiState.isLoading) {
-                            viewModel.clearError() // 点击保存时清除错误状态
-                            viewModel.saveTransaction()
-                        }
-                    },
-                    enabled = !uiState.isLoading
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 分类选择区域 - 使用 HorizontalPager 只切换分类
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(350.dp)  // 增加高度，为分类提供更多空间
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(if (uiState.isEditMode) "更新" else "保存")
-                    }
-                }
-            }
-
-            // 类型切换 - 支持滑动
-            TypeSelector(
-                selectedType = uiState.selectedType,
-                onTypeChanged = { newType ->
-                    viewModel.updateType(newType)
-                    
-                    val targetPage = when (newType) {
-                        "expense" -> 0
-                        "income" -> 1
-                        "transfer" -> 2
-                        else -> 0
-                    }
-                    isUserClick = true
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(
-                            page = targetPage,
-                            animationSpec = androidx.compose.animation.core.tween(
-                                durationMillis = 250,
-                                easing = androidx.compose.animation.core.FastOutSlowInEasing
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth(),
+                        userScrollEnabled = true,
+                        pageSpacing = 0.dp
+                    ) { page ->
+                        val pageCategories = when (page) {
+                            0 -> uiState.expenseCategories
+                            1 -> uiState.incomeCategories
+                            else -> emptyList()
+                        }
+                        
+                        if (pageCategories.isNotEmpty()) {
+                            CategoryGrid(
+                                categories = pageCategories,
+                                selectedCategory = uiState.selectedCategory,
+                                onCategorySelected = viewModel::selectCategory,
+                                showError = false
                             )
-                        )
-                    }
-                },
-                pagerState = pagerState
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 分类选择区域 - 使用 HorizontalPager 只切换分类
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp)  // 增加高度，为分类提供更多空间
-            ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth(),
-                    userScrollEnabled = true,
-                    pageSpacing = 0.dp
-                ) { page ->
-                    val pageCategories = when (page) {
-                        0 -> uiState.expenseCategories
-                        1 -> uiState.incomeCategories
-                        else -> emptyList()
-                    }
-                    
-                    if (pageCategories.isNotEmpty()) {
-                        CategoryGrid(
-                            categories = pageCategories,
-                            selectedCategory = uiState.selectedCategory,
-                            onCategorySelected = viewModel::selectCategory,
-                            showError = false
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "💸",
-                                style = MaterialTheme.typography.displaySmall
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "转账",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        } else {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "💸",
+                                    style = MaterialTheme.typography.displaySmall
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "转账",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
-            }
-
-            // 金额输入框
+            } // 上方 55% Column 结束
+            
+            // 下方区域：金额框 + 四组件 + 键盘 (占45%)
+            Column(
+                modifier = Modifier
+                    .weight(0.45f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
             Spacer(modifier = Modifier.height(12.dp))
             AmountInput(
                 amount = uiState.amount,
@@ -280,7 +298,9 @@ fun AddTransactionSheet(
 
             // 账户、商户、备注、时间 - 超紧凑点击式布局（放在键盘上方）
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(45.dp),  // 进一步缩小，给键盘更多空间
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ),
@@ -412,6 +432,7 @@ fun AddTransactionSheet(
                 onDigitClick = viewModel::appendDigit,
                 onDeleteClick = viewModel::deleteLastDigit
             )
+            } // 下方 45% Column 结束
         } // 外层 Column 结束
     } // ModalBottomSheet 结束
 
@@ -644,7 +665,7 @@ fun AmountInput(
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             TextField(
                 value = amount,
                 onValueChange = onAmountChanged,
