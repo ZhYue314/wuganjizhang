@@ -312,7 +312,9 @@ fun AddTransactionScreen(
             var selDay by remember { mutableStateOf(cal.get(java.util.Calendar.DAY_OF_MONTH)) }
             val years = (2000..2100).toList()
             val months = (1..12).toList()
-            val days = (1..31).toList()
+            val maxDay = java.time.YearMonth.of(selYear, selMonth + 1).lengthOfMonth()
+            if (selDay > maxDay) selDay = maxDay
+            val days = (1..maxDay).toList()
             Box(
                 modifier = Modifier
                     .fillMaxSize()
