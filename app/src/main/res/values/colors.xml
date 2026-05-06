@@ -29,6 +29,9 @@
     <!-- Icon and expense colors -->
     <color name="icon_background">#F3F4F6</color>
     <color name="expense">#EF4444</color>
+    
+    <!-- Splash screen -->
+    <color name="splash_bg">#4CAF7C</color>
 
     <!-- Dark theme colors -->
     <color name="dark_bg">#0F0F14</color>

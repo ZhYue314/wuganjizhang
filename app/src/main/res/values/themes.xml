@@ -31,4 +31,11 @@
     
     <!-- Popup overlay theme -->
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <!-- SplashScreen (Android 12+) -->
+    <style name="Theme.Bookkeeper.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Wuganjizhang</item>
+    </style>
 </resources>

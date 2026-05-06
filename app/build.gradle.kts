@@ -61,6 +61,7 @@ kotlin {
 dependencies {
     // AndroidX Core
     implementation(libs.core.ktx)
+    implementation(libs.core.splashscreen)
     implementation(libs.appcompat)
     implementation(libs.activity.compose)
     implementation(libs.material)

@@ -6,6 +6,7 @@ ksp = "2.0.21-1.0.25"
 # AndroidX
 core-ktx = "1.13.1"
 appcompat = "1.7.1"
+splashscreen = "1.0.1"
 activity = "1.9.3"
 lifecycle = "2.8.7"
 navigation = "2.8.5"
@@ -57,6 +58,7 @@ turbine = "1.2.0"
 [libraries]
 # AndroidX Core
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
 

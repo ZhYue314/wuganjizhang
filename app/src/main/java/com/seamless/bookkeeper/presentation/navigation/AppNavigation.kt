@@ -21,16 +21,15 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -47,7 +46,9 @@ import com.seamless.bookkeeper.presentation.screens.category.CategoryManagementS
 import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
 import com.seamless.bookkeeper.presentation.screens.search.SearchScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsScreen
+import com.seamless.bookkeeper.presentation.screens.settings.SettingsViewModel
 import com.seamless.bookkeeper.presentation.screens.stats.StatsScreen
+import com.seamless.bookkeeper.presentation.theme.BookkeeperTheme
 import kotlinx.coroutines.launch
 
 object Routes {
@@ -59,11 +60,11 @@ object Routes {
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
+    val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val settingsState by settingsViewModel.state.collectAsState()
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    var isDarkMode by remember { mutableStateOf(false) }
-    var isAutoMode by remember { mutableStateOf(true) }
 
     val currentRoute by navController.currentBackStackEntryAsState()
     val route = currentRoute?.destination?.route
@@ -79,10 +80,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 AppDrawerContent(
-                    isDarkMode = isDarkMode,
-                    isAutoMode = isAutoMode,
-                    onToggleDarkMode = { isDarkMode = it },
-                    onToggleAutoMode = { isAutoMode = it },
+                    isDarkMode = settingsState.isDarkMode,
+                    isAutoMode = settingsState.isAutoMode,
+                    onToggleDarkMode = { settingsViewModel.toggleDarkMode(it) },
+                    onToggleAutoMode = { settingsViewModel.toggleAutoMode(it) },
                     onNavigate = { dest ->
                         scope.launch { drawerState.close() }
                         navController.navigate(dest) {
@@ -94,14 +95,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             }
         }
     ) {
-        Scaffold(
-            modifier = modifier,
-            bottomBar = {
-                if (bottomBarVisible) {
-                    BottomNavigationBar(navController = navController)
+        BookkeeperTheme(darkTheme = settingsState.isDarkMode) {
+            Scaffold(
+                modifier = modifier,
+                bottomBar = {
+                    if (bottomBarVisible) {
+                        BottomNavigationBar(navController = navController)
+                    }
                 }
-            }
-        ) { innerPadding ->
+            ) { innerPadding ->
             NavHost(
                 navController = navController,
                 startDestination = BottomNavItem.Home.route,
@@ -133,6 +135,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
             }
         }
+    }
     }
 }
 
