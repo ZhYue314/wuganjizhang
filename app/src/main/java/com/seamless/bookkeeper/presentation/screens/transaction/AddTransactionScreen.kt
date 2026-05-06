@@ -169,7 +169,9 @@ fun AddTransactionScreen(
                             val chunk = chunks[idx]
                             val full = chunk.size == perRow
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().then(
+                                    if (full) Modifier else Modifier.padding(start = evenGap)
+                                ),
                                 horizontalArrangement = if (full) Arrangement.SpaceEvenly
                                 else Arrangement.spacedBy(evenGap)
                             ) {
