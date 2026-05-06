@@ -20,16 +20,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,28 +56,30 @@ fun AddTransactionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("手动记账") },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "取消")
+                    TextButton(onClick = onDismiss) {
+                        Text("取消", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
-                    Text(
-                        text = "保存",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (state.amount.isNotBlank() && state.amount != "0")
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier
-                            .clickable(enabled = state.amount.isNotBlank() && state.amount != "0") {
-                                viewModel.save(onDismiss)
-                            }
-                            .padding(horizontal = Dimens.md, vertical = Dimens.sm)
-                    )
-                }
+                    TextButton(
+                        onClick = { viewModel.save(onDismiss) },
+                        enabled = state.amount.isNotBlank() && state.amount != "0"
+                    ) {
+                        Text(
+                            "保存",
+                            color = if (state.amount.isNotBlank() && state.amount != "0")
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -208,13 +208,15 @@ fun AddTransactionScreen(
 
                 Spacer(Modifier.height(Dimens.md))
 
-                // Auxiliary fields row
+                // Auxiliary fields (4 items in one row, each 25%)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    AuxField("账户", state.selectedAccount?.name ?: "选择", modifier = Modifier.weight(1f))
-                    AuxField("商户", state.merchantName.ifBlank { "备注" }, modifier = Modifier.weight(1f))
+                    AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
+                    AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
+                    AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
+                    AuxField("时间", "现在", Modifier.weight(1f))
                 }
             }
 
@@ -246,8 +248,10 @@ private fun AuxField(label: String, value: String, modifier: Modifier = Modifier
     ) {
         Text(
             "$label: $value",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1
         )
     }
 }
@@ -304,19 +308,6 @@ private fun NumericKeypad(
                     }
                 }
             }
-            Spacer(Modifier.height(6.dp))
-        }
-        // Confirm row
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable(onClick = onConfirm),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("确认", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
     }
 }
