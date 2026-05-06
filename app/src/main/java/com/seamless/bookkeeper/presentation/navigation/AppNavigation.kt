@@ -106,7 +106,11 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Scaffold(
                 modifier = modifier,
                 bottomBar = {
-                    BottomNavigationBar(navController = navController)
+                    Box(Modifier.height(64.dp)) {
+                        if (drawerEnabled) {
+                            BottomNavigationBar(navController = navController)
+                        }
+                    }
                 }
             ) { innerPadding ->
             NavHost(
