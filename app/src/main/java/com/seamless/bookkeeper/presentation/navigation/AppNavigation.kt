@@ -1,48 +1,92 @@
 package com.seamless.bookkeeper.presentation.navigation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
-import com.seamless.bookkeeper.presentation.screens.stats.StatsScreen
+import com.seamless.bookkeeper.presentation.screens.account.AccountManagementScreen
 import com.seamless.bookkeeper.presentation.screens.calendar.CalendarScreen
+import com.seamless.bookkeeper.presentation.screens.category.CategoryManagementScreen
+import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
+import com.seamless.bookkeeper.presentation.screens.settings.SettingsScreen
+import com.seamless.bookkeeper.presentation.screens.stats.StatsScreen
 import kotlinx.coroutines.launch
-import androidx.compose.ui.unit.dp
+
+object Routes {
+    const val CATEGORY_MANAGEMENT = "category_management"
+    const val ACCOUNT_MANAGEMENT = "account_management"
+    const val SETTINGS = "settings"
+}
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var isDarkMode by remember { mutableStateOf(false) }
+    var isAutoMode by remember { mutableStateOf(true) }
+
+    val currentRoute by navController.currentBackStackEntryAsState()
+    val route = currentRoute?.destination?.route
+
+    val bottomBarVisible = route in listOf(
+        BottomNavItem.Home.route,
+        BottomNavItem.Stats.route,
+        BottomNavItem.Calendar.route
+    )
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 AppDrawerContent(
-                    onNavigate = { destination ->
+                    isDarkMode = isDarkMode,
+                    isAutoMode = isAutoMode,
+                    onToggleDarkMode = { isDarkMode = it },
+                    onToggleAutoMode = { isAutoMode = it },
+                    onNavigate = { dest ->
                         scope.launch { drawerState.close() }
+                        navController.navigate(dest) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -51,7 +95,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         Scaffold(
             modifier = modifier,
             bottomBar = {
-                BottomNavigationBar(navController = navController)
+                if (bottomBarVisible) {
+                    BottomNavigationBar(navController = navController)
+                }
             }
         ) { innerPadding ->
             NavHost(
@@ -60,19 +106,22 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(BottomNavItem.Home.route) {
-                    HomeScreen(onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    })
+                    HomeScreen(onMenuClick = { scope.launch { drawerState.open() } })
                 }
                 composable(BottomNavItem.Stats.route) {
-                    StatsScreen(onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    })
+                    StatsScreen(onMenuClick = { scope.launch { drawerState.open() } })
                 }
                 composable(BottomNavItem.Calendar.route) {
-                    CalendarScreen(onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    })
+                    CalendarScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                }
+                composable(Routes.CATEGORY_MANAGEMENT) {
+                    CategoryManagementScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Routes.ACCOUNT_MANAGEMENT) {
+                    AccountManagementScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Routes.SETTINGS) {
+                    SettingsScreen(onBack = { navController.popBackStack() })
                 }
             }
         }
@@ -93,9 +142,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                 selected = currentRoute == item.route,
                 onClick = {
                     navController.navigate(item.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -106,18 +153,94 @@ fun BottomNavigationBar(navController: NavHostController) {
 }
 
 @Composable
-fun AppDrawerContent(onNavigate: (String) -> Unit) {
+fun AppDrawerContent(
+    isDarkMode: Boolean,
+    isAutoMode: Boolean,
+    onToggleDarkMode: (Boolean) -> Unit,
+    onToggleAutoMode: (Boolean) -> Unit,
+    onNavigate: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Spacer(Modifier.height(48.dp))
+        Text(
+            text = "无感记账",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+        )
+        Text(
+            text = "完全本地安全存储",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp)
+        )
+        Spacer(Modifier.height(32.dp))
+        HorizontalDivider()
+
+        SectionTitle("常用设置")
+        DrawerSettingRow("记录模式", if (isAutoMode) "自动记录" else "确认后记录", onClick = { onToggleAutoMode(!isAutoMode) })
+        DrawerSettingRow("深色模式", if (isDarkMode) "深色" else "浅色", onClick = { onToggleDarkMode(!isDarkMode) })
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        SectionTitle("快捷管理")
+        DrawerNavItem("分类管理", "🏷", onClick = { onNavigate(Routes.CATEGORY_MANAGEMENT) })
+        DrawerNavItem("账户管理", "💳", onClick = { onNavigate(Routes.ACCOUNT_MANAGEMENT) })
+        DrawerNavItem("数据备份", "☁", onClick = { })
+        DrawerNavItem("权限管理", "🔒", onClick = { })
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        SectionTitle("设置")
+        DrawerNavItem("高级设置", "⚙", onClick = { onNavigate(Routes.SETTINGS) })
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        DrawerNavItem("反馈问题", "💬", onClick = { })
+        DrawerNavItem("关于", "ℹ", onClick = { })
+
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "版本 1.0.0",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String) {
     Text(
-        text = "无感记账",
-        modifier = Modifier.padding(16.dp)
+        title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
     )
-    Text(
-        text = "完全本地安全存储",
-        modifier = Modifier.padding(
-            start = 16.dp,
-            bottom = 8.dp
-        ),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+@Composable
+private fun DrawerSettingRow(label: String, value: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+private fun DrawerNavItem(label: String, icon: String, onClick: () -> Unit) {
+    NavigationDrawerItem(
+        icon = { Text(icon, fontSize = 20.sp) },
+        label = { Text(label) },
+        selected = false,
+        onClick = onClick
     )
 }
