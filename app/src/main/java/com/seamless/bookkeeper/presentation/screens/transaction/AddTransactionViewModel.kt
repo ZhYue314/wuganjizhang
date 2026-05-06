@@ -20,6 +20,7 @@ data class AddTransactionUiState(
     val type: String = "EXPENSE",
     val selectedCategory: CategoryEntity? = null,
     val selectedAccount: AccountEntity? = null,
+    val toAccount: AccountEntity? = null,
     val merchantName: String = "",
     val note: String = "",
     val timestamp: Long = System.currentTimeMillis(),
@@ -95,6 +96,15 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedAccount = next)
     }
 
+    fun cycleToAccount() {
+        val accounts = _uiState.value.accounts
+        if (accounts.isEmpty()) return
+        val current = _uiState.value.toAccount
+        val idx = accounts.indexOf(current)
+        val next = accounts.getOrElse((idx + 1) % accounts.size) { accounts.first() }
+        _uiState.value = _uiState.value.copy(toAccount = if (next == _uiState.value.selectedAccount) accounts.getOrElse((idx + 2) % accounts.size) { accounts.first() } else next)
+    }
+
     fun appendDigit(digit: String) {
         val current = _uiState.value.amount
         if (digit == ".") {
@@ -127,11 +137,14 @@ class AddTransactionViewModel @Inject constructor(
             val s = _uiState.value
             val amount = s.amount.toBigDecimalOrNull() ?: return@launch
             if (amount <= BigDecimal.ZERO) return@launch
+            val accountId = s.selectedAccount?.id ?: return@launch
+            val toAccountId = if (s.type == "TRANSFER") s.toAccount?.id else null
             transactionRepository.insert(TransactionEntity(
                 amount = amount,
                 type = s.type,
                 categoryId = s.selectedCategory?.id,
-                accountId = s.selectedAccount?.id ?: return@launch,
+                accountId = accountId,
+                toAccountId = if (s.type == "TRANSFER") toAccountId else null,
                 merchantName = s.merchantName.ifBlank { null },
                 note = s.note.ifBlank { null },
                 timestamp = s.timestamp,
@@ -152,6 +165,7 @@ class AddTransactionViewModel @Inject constructor(
             allCategories = _uiState.value.allCategories,
             accounts = accounts,
             selectedAccount = accounts.firstOrNull { it.isDefault } ?: accounts.firstOrNull(),
+            toAccount = accounts.getOrNull(1) ?: accounts.firstOrNull(),
             selectedCategory = cats.firstOrNull(),
             timestamp = System.currentTimeMillis()
         )

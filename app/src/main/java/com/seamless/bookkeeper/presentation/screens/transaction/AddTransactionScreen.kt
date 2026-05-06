@@ -289,10 +289,17 @@ fun AddTransactionScreen(
                 .padding(horizontal = Dimens.md, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleAccount() })
-            AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
-            AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
-            AuxField("时间", dateStr, Modifier.weight(1f))
+            if (state.type == "TRANSFER") {
+                AuxField("转出", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleAccount() })
+                AuxField("转入", state.toAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleToAccount() })
+                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
+                AuxField("时间", dateStr, Modifier.weight(1f))
+            } else {
+                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleAccount() })
+                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
+                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
+                AuxField("时间", dateStr, Modifier.weight(1f))
+            }
         }
     }
 }
