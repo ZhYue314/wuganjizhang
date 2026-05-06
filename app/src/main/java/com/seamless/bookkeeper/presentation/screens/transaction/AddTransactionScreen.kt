@@ -91,75 +91,6 @@ fun AddTransactionScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Fixed: Type segment
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.md, vertical = Dimens.sm),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
-                    val isSelected = state.type == type
-                    Box(
-                        modifier = Modifier
-                            .weight(1f).height(40.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isSelected) when (type) {
-                                    "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
-                                    else -> MaterialTheme.colorScheme.primary
-                                } else MaterialTheme.colorScheme.surfaceVariant
-                            )
-                            .clickable { viewModel.setType(type) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            label,
-                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
-
-            // Fixed: Amount box
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .padding(horizontal = Dimens.md)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(
-                    text = "¥ ${state.amount.ifBlank { "0.00" }}",
-                    modifier = Modifier.padding(start = 16.dp),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = when (state.type) {
-                        "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                )
-            }
-
-            // Fixed: 4 aux fields
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.md, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
-                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
-                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
-                AuxField("时间", dateStr, Modifier.weight(1f))
-            }
-
-            // Divider
-            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.md))
-
             // Scrollable: Category grid
             Column(
                 modifier = Modifier
@@ -218,7 +149,64 @@ fun AddTransactionScreen(
                 }
             }
 
-            // Fixed: Numeric keypad
+            // Divider
+            HorizontalDivider()
+
+            // Fixed: Type segment
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.md, vertical = Dimens.sm),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
+                    val isSelected = state.type == type
+                    Box(
+                        modifier = Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) when (type) {
+                                "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
+                                else -> MaterialTheme.colorScheme.primary
+                            } else MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { viewModel.setType(type) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(label, color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                    }
+                }
+            }
+
+            // Fixed: Amount box
+            Box(
+                modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = Dimens.md)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = "¥ ${state.amount.ifBlank { "0.00" }}",
+                    modifier = Modifier.padding(start = 16.dp),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = when (state.type) {
+                        "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+
+            // Fixed: 4 aux fields
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.md, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
+                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
+                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
+                AuxField("时间", dateStr, Modifier.weight(1f))
+            }
+
+            // Divider + Numeric keypad
             HorizontalDivider()
             NumericKeypad(
                 onDigit = { viewModel.appendDigit(it) },
