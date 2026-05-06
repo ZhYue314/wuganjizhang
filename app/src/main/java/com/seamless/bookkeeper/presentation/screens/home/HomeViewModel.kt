@@ -1,5 +1,6 @@
 package com.seamless.bookkeeper.presentation.screens.home
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.seamless.bookkeeper.data.local.entity.TransactionWithRelations
@@ -7,9 +8,7 @@ import com.seamless.bookkeeper.domain.repository.TransactionRepository
 import com.seamless.bookkeeper.util.DateUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.Instant
@@ -40,79 +39,65 @@ class HomeViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             transactionRepository.getAllWithRelationsFlow().collect { transactions ->
-                updateState(transactions)
+                val grouped = groupByDate(transactions)
+                val now = System.currentTimeMillis()
+                val ms = DateUtil.getMonthStart(now)
+                val me = DateUtil.getMonthEnd(now)
+                val expense = transactionRepository.getTotalExpense(ms, me) ?: BigDecimal.ZERO
+                val income = transactionRepository.getTotalIncome(ms, me) ?: BigDecimal.ZERO
+                _uiState.value = _uiState.value.copy(
+                    transactions = transactions,
+                    groupedTransactions = grouped,
+                    dailyTotals = grouped.mapValues { (_, txs) ->
+                        txs.map { it.transaction }.filter { it.type == "EXPENSE" }
+                            .sumOf { it.amount } ?: BigDecimal.ZERO
+                    },
+                    monthlyExpense = expense,
+                    monthlyIncome = income,
+                    balance = income.subtract(expense),
+                    isLoading = false
+                )
             }
         }
     }
 
-    private suspend fun updateState(transactions: List<TransactionWithRelations>) {
-        val now = System.currentTimeMillis()
-        val monthStart = DateUtil.getMonthStart(now)
-        val monthEnd = DateUtil.getMonthEnd(now)
-
-        val expense = transactionRepository.getTotalExpense(monthStart, monthEnd) ?: BigDecimal.ZERO
-        val income = transactionRepository.getTotalIncome(monthStart, monthEnd) ?: BigDecimal.ZERO
-        val grouped = groupByDate(transactions)
-
-        _uiState.value = HomeUiState(
-            transactions = transactions,
-            groupedTransactions = grouped,
-            dailyTotals = grouped.mapValues { (_, txs) ->
-                txs.map { it.transaction }.filter { it.type == "EXPENSE" }
-                    .sumOf { it.amount } ?: BigDecimal.ZERO
-            },
-            monthlyExpense = expense,
-            monthlyIncome = income,
-            balance = income.subtract(expense),
-            isLoading = false
-        )
-    }
-
     fun toggleSelectionMode() {
-        val current = _uiState.value
-        _uiState.value = current.copy(
-            isSelectionMode = !current.isSelectionMode,
-            selectedIds = if (current.isSelectionMode) emptySet() else current.selectedIds
+        val cur = _uiState.value
+        _uiState.value = cur.copy(
+            isSelectionMode = !cur.isSelectionMode,
+            selectedIds = if (cur.isSelectionMode) emptySet() else cur.selectedIds
         )
     }
 
     fun toggleSelection(id: Long) {
-        val current = _uiState.value
-        _uiState.value = current.copy(
-            selectedIds = if (id in current.selectedIds) current.selectedIds - id
-            else current.selectedIds + id
+        val cur = _uiState.value
+        _uiState.value = cur.copy(
+            selectedIds = if (id in cur.selectedIds) cur.selectedIds - id else cur.selectedIds + id
         )
     }
 
     fun deleteSelected() {
         viewModelScope.launch {
-            val ids = _uiState.value.selectedIds.toList()
-            transactionRepository.deleteByIds(ids)
+            transactionRepository.deleteByIds(_uiState.value.selectedIds.toList())
             _uiState.value = _uiState.value.copy(isSelectionMode = false, selectedIds = emptySet())
         }
     }
 
     fun deleteTransaction(tx: TransactionWithRelations) {
-        viewModelScope.launch {
-            transactionRepository.delete(tx.transaction.id)
-        }
+        viewModelScope.launch { transactionRepository.delete(tx.transaction.id) }
     }
 
     private fun groupByDate(transactions: List<TransactionWithRelations>): Map<String, List<TransactionWithRelations>> {
         val today = LocalDate.now()
         val yesterday = today.minusDays(1)
-        return transactions.groupBy { tx ->
-            val date = Instant.ofEpochMilli(tx.transaction.timestamp)
-                .atZone(ZoneId.systemDefault()).toLocalDate()
-            when (date) {
-                today -> "今天"
-                yesterday -> "昨天"
-                else -> "${date.monthValue}月${date.dayOfMonth}日"
-            }
+        val map = LinkedHashMap<String, List<TransactionWithRelations>>()
+        for (tx in transactions) {
+            val date = Instant.ofEpochMilli(tx.transaction.timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+            val key = when (date) { today -> "今天"; yesterday -> "昨天"; else -> "${date.monthValue}月${date.dayOfMonth}日" }
+            map[key] = (map[key] ?: emptyList()) + tx
         }
+        return map
     }
 
-    fun formatAmount(amount: BigDecimal): String {
-        return "¥${amount.setScale(2, BigDecimal.ROUND_HALF_UP)}"
-    }
+    fun formatAmount(amount: BigDecimal): String = "¥${amount.setScale(2, BigDecimal.ROUND_HALF_UP)}"
 }
