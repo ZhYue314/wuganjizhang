@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -109,7 +110,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 NavHost(
                     navController = navController,
                     startDestination = BottomNavItem.Home.route,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(bottom = if (isMainTab) 56.dp else 0.dp)
                 ) {
                     composable(
                         route = BottomNavItem.Home.route,
@@ -152,7 +156,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
 
                 if (isMainTab) {
-                    Box(Modifier.align(Alignment.BottomCenter)) {
+                    Box(Modifier.align(Alignment.BottomCenter).height(56.dp)) {
                         BottomNavigationBar(navController = navController)
                     }
                 }
