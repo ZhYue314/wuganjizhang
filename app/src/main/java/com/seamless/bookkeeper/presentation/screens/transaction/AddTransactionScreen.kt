@@ -344,14 +344,14 @@ fun AddTransactionScreen(
                     }
                     HorizontalDivider()
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(200.dp).padding(horizontal = Dimens.sm),
+                        modifier = Modifier.fillMaxWidth().height(120.dp).padding(horizontal = Dimens.sm),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         SelectableList(years, selYear, Modifier.weight(1f)) { selYear = it }
                         SelectableList(months, selMonth + 1, Modifier.weight(1f)) { selMonth = it - 1 }
                         SelectableList(days, selDay, Modifier.weight(1f)) { selDay = it }
                     }
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
             }
         }
@@ -470,7 +470,7 @@ private fun SelectableList(values: List<Int>, selected: Int, modifier: Modifier 
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSelect(v) }
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 10.dp),
                     textAlign = TextAlign.Center,
                     fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
                     color = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
