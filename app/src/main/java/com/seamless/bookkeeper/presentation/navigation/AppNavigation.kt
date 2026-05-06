@@ -3,6 +3,8 @@ package com.seamless.bookkeeper.presentation.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -122,17 +124,29 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 startDestination = BottomNavItem.Home.route,
                 modifier = Modifier.padding(innerPadding)
             ) {
-                composable(BottomNavItem.Home.route) {
+                composable(
+                    route = BottomNavItem.Home.route,
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None }
+                ) {
                     HomeScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onSearchClick = { navController.navigate(Routes.SEARCH) },
                         onAddTransactionClick = { navController.navigate(Routes.ADD_TRANSACTION) }
                     )
                 }
-                composable(BottomNavItem.Stats.route) {
+                composable(
+                    route = BottomNavItem.Stats.route,
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None }
+                ) {
                     StatsScreen(onMenuClick = { scope.launch { drawerState.open() } })
                 }
-                composable(BottomNavItem.Calendar.route) {
+                composable(
+                    route = BottomNavItem.Calendar.route,
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None }
+                ) {
                     CalendarScreen(onMenuClick = { scope.launch { drawerState.open() } })
                 }
                 composable(Routes.CATEGORY_MANAGEMENT) {
