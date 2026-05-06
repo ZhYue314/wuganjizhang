@@ -8,6 +8,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -92,8 +93,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 AppDrawerContent(
                     isDarkMode = settingsState.isDarkMode,
+                    darkModeValue = settingsState.darkModeValue,
                     isAutoMode = settingsState.isAutoMode,
-                    onToggleDarkMode = { settingsViewModel.toggleDarkMode(it) },
+                    onCycleDarkMode = { settingsViewModel.cycleDarkMode() },
                     onToggleAutoMode = { settingsViewModel.toggleAutoMode(it) },
                     onNavigate = { dest ->
                         scope.launch { drawerState.close() }
@@ -106,7 +108,13 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             }
         }
     ) {
-        BookkeeperTheme(darkTheme = settingsState.isDarkMode) {
+        BookkeeperTheme(
+            darkTheme = when (settingsState.darkModeValue) {
+                "DARK" -> true
+                "LIGHT" -> false
+                else -> isSystemInDarkTheme()
+            }
+        ) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 NavHost(
                     navController = navController,
@@ -207,8 +215,9 @@ fun BottomNavigationBar(navController: NavHostController) {
 @Composable
 fun AppDrawerContent(
     isDarkMode: Boolean,
+    darkModeValue: String,
     isAutoMode: Boolean,
-    onToggleDarkMode: (Boolean) -> Unit,
+    onCycleDarkMode: () -> Unit,
     onToggleAutoMode: (Boolean) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -235,7 +244,9 @@ fun AppDrawerContent(
 
         SectionTitle("常用设置")
         DrawerSettingRow("记录模式", if (isAutoMode) "自动记录" else "确认后记录", onClick = { onToggleAutoMode(!isAutoMode) })
-        DrawerSettingRow("深色模式", if (isDarkMode) "深色" else "浅色", onClick = { onToggleDarkMode(!isDarkMode) })
+        DrawerSettingRow("深色模式",
+            when (darkModeValue) { "DARK" -> "深色"; "LIGHT" -> "浅色"; else -> "跟随系统" },
+            onClick = { onCycleDarkMode() })
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         SectionTitle("快捷管理")

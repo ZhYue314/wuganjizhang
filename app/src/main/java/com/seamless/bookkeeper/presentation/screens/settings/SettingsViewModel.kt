@@ -11,6 +11,7 @@ import javax.inject.Inject
 
 data class AppSettingsState(
     val isDarkMode: Boolean = false,
+    val darkModeValue: String = "SYSTEM",
     val isAutoMode: Boolean = true
 )
 
@@ -26,6 +27,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             userPreferences.darkMode.collect { mode ->
                 _state.value = _state.value.copy(
+                    darkModeValue = mode,
                     isDarkMode = mode == "DARK"
                 )
             }
@@ -39,9 +41,14 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun toggleDarkMode(enabled: Boolean) {
+    fun cycleDarkMode() {
         viewModelScope.launch {
-            userPreferences.setDarkMode(if (enabled) "DARK" else "LIGHT")
+            val next = when (_state.value.darkModeValue) {
+                "SYSTEM" -> "DARK"
+                "DARK" -> "LIGHT"
+                else -> "SYSTEM"
+            }
+            userPreferences.setDarkMode(next)
         }
     }
 
