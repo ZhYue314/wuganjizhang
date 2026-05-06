@@ -195,10 +195,11 @@ fun AddTransactionScreen(
                         .height(56.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
                         text = "¥ ${state.amount.ifBlank { "0.00" }}",
+                        modifier = Modifier.padding(start = 16.dp),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = when (state.type) {
