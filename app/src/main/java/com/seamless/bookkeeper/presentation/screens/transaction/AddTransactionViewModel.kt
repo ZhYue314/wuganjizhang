@@ -52,6 +52,12 @@ class AddTransactionViewModel @Inject constructor(
         }
     }
 
+    companion object {
+        val typeList = listOf("EXPENSE", "INCOME", "TRANSFER")
+        fun getTypeForPage(page: Int) = typeList.getOrElse(page) { "EXPENSE" }
+        fun getPageForType(type: String) = typeList.indexOf(type).coerceAtLeast(0)
+    }
+
     fun setType(type: String) {
         viewModelScope.launch {
             val cats = when (type) {

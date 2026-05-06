@@ -3,6 +3,7 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,11 +29,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +57,8 @@ fun AddTransactionScreen(
     val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
         .format(java.util.Date(state.timestamp))
 
+    val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -69,7 +75,7 @@ fun AddTransactionScreen(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
+                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEachIndexed { index, (label, type) ->
                     val isSelected = state.type == type
                     Text(
                         text = label,
@@ -80,7 +86,9 @@ fun AddTransactionScreen(
                             "INCOME" -> IncomeLight
                             else -> MaterialTheme.colorScheme.primary
                         } else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.clickable { viewModel.setType(type) }
+                        modifier = Modifier.clickable {
+                            viewModel.setType(type)
+                        }
                     )
                 }
             }
@@ -93,6 +101,22 @@ fun AddTransactionScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Dimens.md)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures { _, dragAmount ->
+                        if (kotlin.math.abs(dragAmount) > 100f) {
+                            val types = AddTransactionViewModel.typeList
+                            val currentIndex = types.indexOf(state.type).coerceAtLeast(0)
+                            val nextIndex = if (dragAmount < 0) {
+                                (currentIndex + 1).coerceAtMost(types.lastIndex)
+                            } else {
+                                (currentIndex - 1).coerceAtLeast(0)
+                            }
+                            if (nextIndex != currentIndex) {
+                                viewModel.setType(types[nextIndex])
+                            }
+                        }
+                    }
+                }
         ) {
             Spacer(Modifier.height(Dimens.sm))
             FlowRow(
