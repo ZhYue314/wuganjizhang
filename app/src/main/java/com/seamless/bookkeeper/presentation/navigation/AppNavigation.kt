@@ -71,7 +71,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     val currentRoute by navController.currentBackStackEntryAsState()
     val route = currentRoute?.destination?.route
 
-    val bottomBarVisible = route in listOf(
+    val drawerEnabled = route in listOf(
         BottomNavItem.Home.route,
         BottomNavItem.Stats.route,
         BottomNavItem.Calendar.route
@@ -79,6 +79,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = drawerEnabled,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 AppDrawerContent(
@@ -101,7 +102,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Scaffold(
                 modifier = modifier,
                 bottomBar = {
-                    if (bottomBarVisible) {
+                    if (drawerEnabled) {
                         BottomNavigationBar(navController = navController)
                     }
                 }
