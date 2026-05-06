@@ -85,6 +85,10 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedCategory = category)
     }
 
+    fun setSelectedAccount(account: AccountEntity) {
+        _uiState.value = _uiState.value.copy(selectedAccount = account)
+    }
+
     fun setMerchantName(name: String) { _uiState.value = _uiState.value.copy(merchantName = name) }
     fun setNote(note: String) { _uiState.value = _uiState.value.copy(note = note) }
     fun cycleAccount() {

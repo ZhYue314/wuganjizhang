@@ -2,6 +2,9 @@
 
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,12 +24,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +79,9 @@ fun AddTransactionScreen(
 
     var showMerchantDialog by remember { mutableStateOf(false) }
     var showNoteDialog by remember { mutableStateOf(false) }
+    var showAccountPicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     if (showMerchantDialog) {
         var text by remember { mutableStateOf(state.merchantName) }
@@ -100,10 +110,11 @@ fun AddTransactionScreen(
         pageCount = { 3 }
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
                 var totalX = 0f
                 detectHorizontalDragGestures(
                     onDragEnd = {
@@ -290,15 +301,103 @@ fun AddTransactionScreen(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if (state.type == "TRANSFER") {
-                AuxField("转出", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleAccount() })
-                AuxField("转入", state.toAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleToAccount() })
+                AuxField("转出", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = true })
+                AuxField("转入", state.toAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = true })
                 AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
-                AuxField("时间", dateStr, Modifier.weight(1f))
+                AuxField("时间", dateStr, Modifier.weight(1f), onClick = { showTimePicker = true })
             } else {
-                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleAccount() })
+                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = true })
                 AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
                 AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
-                AuxField("时间", dateStr, Modifier.weight(1f))
+                AuxField("时间", dateStr, Modifier.weight(1f), onClick = { showTimePicker = true })
+            }
+        }
+
+        // Account picker expandable
+        AnimatedVisibility(
+            visible = showAccountPicker,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.md),
+                shape = RoundedCornerShape(Dimens.shapeMedium)
+            ) {
+                Column {
+                    state.accounts.forEach { account ->
+                        val sel = account.id == state.selectedAccount?.id
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.setSelectedAccount(account); showAccountPicker = false }
+                                .padding(horizontal = Dimens.md, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(account.name, style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
+                                color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                            if (sel) Text("✓", color = MaterialTheme.colorScheme.primary)
+                        }
+                        if (account != state.accounts.last()) HorizontalDivider()
+                    }
+                }
+            }
+        }
+        }
+
+        // Time picker overlay
+        if (showTimePicker) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable { showTimePicker = false },
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { },
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(Dimens.md),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            TextButton(onClick = { showTimePicker = false }) { Text("取消") }
+                            Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = { showTimePicker = false }) { Text("确定") }
+                        }
+                        HorizontalDivider()
+                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = state.timestamp }
+                        val y = cal.get(java.util.Calendar.YEAR)
+                        val m = cal.get(java.util.Calendar.MONTH) + 1
+                        val d = cal.get(java.util.Calendar.DAY_OF_MONTH)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(200.dp).padding(Dimens.md),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            listOf("年", "月", "日").forEachIndexed { i, unit ->
+                                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(unit, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Spacer(Modifier.height(8.dp))
+                                    val values = when (i) { 0 -> (y - 5..y + 5).toList(); 1 -> (1..12).toList(); else -> (1..28).toList() }
+                                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                                        values.forEach { v ->
+                                            Text(
+                                                "$v",
+                                                Modifier.fillMaxWidth().clickable { }.padding(vertical = 6.dp),
+                                                textAlign = TextAlign.Center,
+                                                fontWeight = if (v == listOf(y, m, d)[i]) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (v == listOf(y, m, d)[i]) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
