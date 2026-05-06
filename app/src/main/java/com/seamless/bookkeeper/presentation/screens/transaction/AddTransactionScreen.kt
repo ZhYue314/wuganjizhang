@@ -1,5 +1,12 @@
 ﻿package com.seamless.bookkeeper.presentation.screens.transaction
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,13 +36,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +66,7 @@ fun AddTransactionScreen(
         .format(java.util.Date(state.timestamp))
 
     val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
+    var swipeDir by remember { mutableStateOf(1) }
 
     Column(
         modifier = Modifier
@@ -71,6 +80,7 @@ fun AddTransactionScreen(
                             val i = types.indexOf(state.type).coerceAtLeast(0)
                             val n = if (totalX < 0) (i + 1).coerceAtMost(types.lastIndex)
                             else (i - 1).coerceAtLeast(0)
+                            swipeDir = if (totalX < 0) 1 else -1
                             if (n != i) viewModel.setType(types[n])
                         }
                         totalX = 0f
@@ -127,6 +137,19 @@ fun AddTransactionScreen(
                 .padding(horizontal = Dimens.md)
         ) {
             Spacer(Modifier.height(Dimens.sm))
+            AnimatedContent(
+                targetState = state.type,
+                transitionSpec = {
+                    if (swipeDir > 0) {
+                        (slideInHorizontally { w -> w } + fadeIn(tween(250)))
+                            .togetherWith(slideOutHorizontally { w -> -w } + fadeOut(tween(250)))
+                    } else {
+                        (slideInHorizontally { w -> -w } + fadeIn(tween(250)))
+                            .togetherWith(slideOutHorizontally { w -> w } + fadeOut(tween(250)))
+                    }
+                },
+                label = "category_switch"
+            ) { _ ->
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -159,6 +182,7 @@ fun AddTransactionScreen(
                             color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface)
                     }
                 }
+            }
             }
         }
 
