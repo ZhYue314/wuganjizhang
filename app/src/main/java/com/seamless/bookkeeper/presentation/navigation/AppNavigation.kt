@@ -1,19 +1,18 @@
 package com.seamless.bookkeeper.presentation.navigation
 
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,21 +28,18 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -56,9 +52,9 @@ import com.seamless.bookkeeper.presentation.screens.category.CategoryManagementS
 import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
 import com.seamless.bookkeeper.presentation.screens.search.SearchScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsScreen
-import com.seamless.bookkeeper.presentation.screens.transaction.AddTransactionScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsViewModel
 import com.seamless.bookkeeper.presentation.screens.stats.StatsScreen
+import com.seamless.bookkeeper.presentation.screens.transaction.AddTransactionScreen
 import com.seamless.bookkeeper.presentation.theme.BookkeeperTheme
 import kotlinx.coroutines.launch
 
@@ -72,7 +68,7 @@ object Routes {
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
-    val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.state.collectAsState()
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -81,7 +77,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     val currentRoute by navController.currentBackStackEntryAsState()
     val route = currentRoute?.destination?.route
 
-    val drawerEnabled = route in listOf(
+    val isMainTab = route in listOf(
         BottomNavItem.Home.route,
         BottomNavItem.Stats.route,
         BottomNavItem.Calendar.route
@@ -89,7 +85,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = drawerEnabled,
+        gesturesEnabled = isMainTab,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 AppDrawerContent(
@@ -109,70 +105,70 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
     ) {
         BookkeeperTheme(darkTheme = settingsState.isDarkMode) {
-            Scaffold(
-                modifier = modifier,
-                bottomBar = {
-                    Box(Modifier.height(64.dp)) {
-                        if (drawerEnabled) {
-                            BottomNavigationBar(navController = navController)
-                        }
+            Box(Modifier.fillMaxSize()) {
+                NavHost(
+                    navController = navController,
+                    startDestination = BottomNavItem.Home.route,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    composable(
+                        route = BottomNavItem.Home.route,
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None }
+                    ) {
+                        HomeScreen(
+                            onMenuClick = { scope.launch { drawerState.open() } },
+                            onSearchClick = { navController.navigate(Routes.SEARCH) },
+                            onAddTransactionClick = { navController.navigate(Routes.ADD_TRANSACTION) }
+                        )
+                    }
+                    composable(
+                        route = BottomNavItem.Stats.route,
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None }
+                    ) {
+                        StatsScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                    }
+                    composable(
+                        route = BottomNavItem.Calendar.route,
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None }
+                    ) {
+                        CalendarScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                    }
+                    composable(Routes.CATEGORY_MANAGEMENT) {
+                        CategoryManagementScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable(Routes.ACCOUNT_MANAGEMENT) {
+                        AccountManagementScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable(Routes.SETTINGS) {
+                        SettingsScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable(Routes.SEARCH) {
+                        SearchScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable(Routes.ADD_TRANSACTION) {}
+                }
+
+                if (isMainTab) {
+                    Box(Modifier.align(Alignment.BottomCenter)) {
+                        BottomNavigationBar(navController = navController)
                     }
                 }
-            ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = BottomNavItem.Home.route,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(
-                    route = BottomNavItem.Home.route,
-                    enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None }
+
+                AnimatedVisibility(
+                    visible = route == Routes.ADD_TRANSACTION,
+                    enter = slideInHorizontally(tween(300)) { it },
+                    exit = slideOutHorizontally(tween(300)) { it },
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    HomeScreen(
-                        onMenuClick = { scope.launch { drawerState.open() } },
-                        onSearchClick = { navController.navigate(Routes.SEARCH) },
-                        onAddTransactionClick = { navController.navigate(Routes.ADD_TRANSACTION) }
+                    AddTransactionScreen(
+                        onDismiss = { navController.popBackStack() }
                     )
-                }
-                composable(
-                    route = BottomNavItem.Stats.route,
-                    enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None }
-                ) {
-                    StatsScreen(onMenuClick = { scope.launch { drawerState.open() } })
-                }
-                composable(
-                    route = BottomNavItem.Calendar.route,
-                    enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None }
-                ) {
-                    CalendarScreen(onMenuClick = { scope.launch { drawerState.open() } })
-                }
-                composable(Routes.CATEGORY_MANAGEMENT) {
-                    CategoryManagementScreen(onBack = { navController.popBackStack() })
-                }
-                composable(Routes.ACCOUNT_MANAGEMENT) {
-                    AccountManagementScreen(onBack = { navController.popBackStack() })
-                }
-                composable(Routes.SETTINGS) {
-                    SettingsScreen(onBack = { navController.popBackStack() })
-                }
-                composable(Routes.SEARCH) {
-                    SearchScreen(onBack = { navController.popBackStack() })
-                }
-                composable(
-                    route = Routes.ADD_TRANSACTION,
-                    enterTransition = { slideInHorizontally(tween(300)) { it } },
-                    exitTransition = { slideOutHorizontally(tween(300)) { -it } },
-                    popEnterTransition = { slideInHorizontally(tween(300)) { -it } },
-                    popExitTransition = { slideOutHorizontally(tween(300)) { it } }
-                ) {
-                    AddTransactionScreen(onDismiss = { navController.popBackStack() })
                 }
             }
         }
-    }
     }
 }
 
@@ -182,9 +178,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.background
-    ) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
         items.forEach { item ->
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
