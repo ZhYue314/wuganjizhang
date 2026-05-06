@@ -16,11 +16,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun EmptyState(
     message: String,
+    modifier: Modifier = Modifier,
     actionText: String? = null,
     onAction: (() -> Unit)? = null
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

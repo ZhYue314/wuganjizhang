@@ -13,5 +13,6 @@ interface CategoryRepository {
     suspend fun getPresetCategories(): List<CategoryEntity>
     suspend fun getCustomCategories(): List<CategoryEntity>
     suspend fun getDefaultExpenseCategory(): CategoryEntity?
+    suspend fun getAll(): List<CategoryEntity>
     fun getAllFlow(): Flow<List<CategoryEntity>>
 }

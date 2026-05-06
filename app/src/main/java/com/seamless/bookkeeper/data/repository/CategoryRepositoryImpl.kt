@@ -30,5 +30,7 @@ class CategoryRepositoryImpl @Inject constructor(
 
     override suspend fun getDefaultExpenseCategory(): CategoryEntity? = categoryDao.getDefaultExpenseCategory()
 
+    override suspend fun getAll(): List<CategoryEntity> = categoryDao.getAll()
+
     override fun getAllFlow(): Flow<List<CategoryEntity>> = categoryDao.getAllFlow()
 }

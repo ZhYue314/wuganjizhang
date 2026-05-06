@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
@@ -62,6 +63,7 @@ import java.math.BigDecimal
 @Composable
 fun HomeScreen(
     onMenuClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -97,6 +99,11 @@ fun HomeScreen(
                     navigationIcon = {
                         IconButton(onClick = onMenuClick) {
                             Icon(Icons.Default.Menu, contentDescription = "菜单")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onSearchClick) {
+                            Icon(Icons.Default.Search, contentDescription = "搜索")
                         }
                     }
                 )

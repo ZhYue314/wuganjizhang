@@ -45,6 +45,7 @@ import com.seamless.bookkeeper.presentation.screens.account.AccountManagementScr
 import com.seamless.bookkeeper.presentation.screens.calendar.CalendarScreen
 import com.seamless.bookkeeper.presentation.screens.category.CategoryManagementScreen
 import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
+import com.seamless.bookkeeper.presentation.screens.search.SearchScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsScreen
 import com.seamless.bookkeeper.presentation.screens.stats.StatsScreen
 import kotlinx.coroutines.launch
@@ -53,6 +54,7 @@ object Routes {
     const val CATEGORY_MANAGEMENT = "category_management"
     const val ACCOUNT_MANAGEMENT = "account_management"
     const val SETTINGS = "settings"
+    const val SEARCH = "search"
 }
 
 @Composable
@@ -106,7 +108,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(BottomNavItem.Home.route) {
-                    HomeScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                    HomeScreen(
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onSearchClick = { navController.navigate(Routes.SEARCH) }
+                    )
                 }
                 composable(BottomNavItem.Stats.route) {
                     StatsScreen(onMenuClick = { scope.launch { drawerState.open() } })
@@ -122,6 +127,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
                 composable(Routes.SETTINGS) {
                     SettingsScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Routes.SEARCH) {
+                    SearchScreen(onBack = { navController.popBackStack() })
                 }
             }
         }
