@@ -102,56 +102,6 @@ fun AddTransactionScreen(
         )
     }
 
-    // Time picker overlay
-    if (showTimePicker) {
-        val cal = java.util.Calendar.getInstance().apply { timeInMillis = state.timestamp }
-        var selYear by remember { mutableStateOf(cal.get(java.util.Calendar.YEAR)) }
-        var selMonth by remember { mutableStateOf(cal.get(java.util.Calendar.MONTH)) }
-        var selDay by remember { mutableStateOf(cal.get(java.util.Calendar.DAY_OF_MONTH)) }
-        val years = (2000..2100).toList()
-        val months = (1..12).toList()
-        val days = (1..31).toList()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
-                .clickable { showTimePicker = false },
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                    .clickable { }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(Dimens.md),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = { showTimePicker = false }) { Text("取消") }
-                    Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    TextButton(onClick = {
-                        val c = java.util.Calendar.getInstance()
-                        c.set(selYear, selMonth, selDay)
-                        viewModel.setTimestamp(c.timeInMillis)
-                        showTimePicker = false
-                    }) { Text("确定") }
-                }
-                HorizontalDivider()
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(200.dp).padding(horizontal = Dimens.sm),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    SelectableList(years, selYear, Modifier.weight(1f)) { selYear = it }
-                    SelectableList(months, selMonth + 1, Modifier.weight(1f)) { selMonth = it - 1 }
-                    SelectableList(days, selDay, Modifier.weight(1f)) { selDay = it }
-                }
-                Spacer(Modifier.height(20.dp))
-            }
-        }
-    }
-
     val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
     val pagerState = rememberPagerState(
         initialPage = AddTransactionViewModel.getPageForType(state.type),
@@ -351,6 +301,56 @@ fun AddTransactionScreen(
                 AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
                 AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
                 AuxField("时间", dateStr, Modifier.weight(1f), onClick = { showTimePicker = true })
+            }
+        }
+
+        // Time picker overlay
+        if (showTimePicker) {
+            val cal = java.util.Calendar.getInstance().apply { timeInMillis = state.timestamp }
+            var selYear by remember { mutableStateOf(cal.get(java.util.Calendar.YEAR)) }
+            var selMonth by remember { mutableStateOf(cal.get(java.util.Calendar.MONTH)) }
+            var selDay by remember { mutableStateOf(cal.get(java.util.Calendar.DAY_OF_MONTH)) }
+            val years = (2000..2100).toList()
+            val months = (1..12).toList()
+            val days = (1..31).toList()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable { showTimePicker = false },
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                        .clickable { }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(Dimens.md),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { showTimePicker = false }) { Text("取消") }
+                        Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        TextButton(onClick = {
+                            val c = java.util.Calendar.getInstance()
+                            c.set(selYear, selMonth, selDay)
+                            viewModel.setTimestamp(c.timeInMillis)
+                            showTimePicker = false
+                        }) { Text("确定") }
+                    }
+                    HorizontalDivider()
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(200.dp).padding(horizontal = Dimens.sm),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        SelectableList(years, selYear, Modifier.weight(1f)) { selYear = it }
+                        SelectableList(months, selMonth + 1, Modifier.weight(1f)) { selMonth = it - 1 }
+                        SelectableList(days, selDay, Modifier.weight(1f)) { selDay = it }
+                    }
+                    Spacer(Modifier.height(20.dp))
+                }
             }
         }
     }
