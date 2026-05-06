@@ -24,6 +24,7 @@ data class AddTransactionUiState(
     val note: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val categories: List<CategoryEntity> = emptyList(),
+    val allCategories: Map<String, List<CategoryEntity>> = emptyMap(),
     val accounts: List<AccountEntity> = emptyList(),
     val isSaving: Boolean = false
 )
@@ -42,10 +43,16 @@ class AddTransactionViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
-            val expenseCats = categoryRepository.getByType("EXPENSE")
+            val allCats = mapOf(
+                "EXPENSE" to categoryRepository.getByType("EXPENSE"),
+                "INCOME" to categoryRepository.getByType("INCOME"),
+                "TRANSFER" to emptyList<CategoryEntity>()
+            )
             val accounts = accountRepository.getAllEnabled()
+            val expenseCats = allCats["EXPENSE"] ?: emptyList()
             _uiState.value = _uiState.value.copy(
                 categories = expenseCats,
+                allCategories = allCats,
                 accounts = accounts,
                 selectedAccount = accounts.firstOrNull { it.isDefault } ?: accounts.firstOrNull()
             )
@@ -59,16 +66,17 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     fun setType(type: String) {
-        viewModelScope.launch {
-            val cats = when (type) {
-                "EXPENSE" -> categoryRepository.getByType("EXPENSE")
-                "INCOME" -> categoryRepository.getByType("INCOME")
-                else -> emptyList()
-            }
-            val selected = if (cats.any { it.id == _uiState.value.selectedCategory?.id }) {
-                _uiState.value.selectedCategory
-            } else cats.firstOrNull()
-            _uiState.value = _uiState.value.copy(type = type, categories = cats, selectedCategory = selected)
+        val cats = _uiState.value.allCategories[type] ?: emptyList()
+        val selected = if (cats.any { it.id == _uiState.value.selectedCategory?.id }) {
+            _uiState.value.selectedCategory
+        } else cats.firstOrNull()
+        _uiState.value = _uiState.value.copy(type = type, categories = cats, selectedCategory = selected)
+    }
+
+    fun setPage(page: Int) {
+        val type = getTypeForPage(page)
+        if (type != _uiState.value.type) {
+            setType(type)
         }
     }
 
@@ -108,7 +116,6 @@ class AddTransactionViewModel @Inject constructor(
             val state = _uiState.value
             val amount = state.amount.toBigDecimalOrNull() ?: return@launch
             if (amount <= BigDecimal.ZERO) return@launch
-
             transactionRepository.insert(TransactionEntity(
                 amount = amount,
                 type = state.type,

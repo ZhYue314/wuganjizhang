@@ -1,11 +1,7 @@
 ﻿package com.seamless.bookkeeper.presentation.screens.transaction
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,8 +31,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,6 +64,10 @@ fun AddTransactionScreen(
         .format(java.util.Date(state.timestamp))
 
     val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
+    val pagerState = rememberPagerState(
+        initialPage = AddTransactionViewModel.getPageForType(state.type),
+        pageCount = { 3 }
+    )
 
     Column(
         modifier = Modifier
@@ -102,12 +105,16 @@ fun AddTransactionScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val scope = rememberCoroutineScope()
                 listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
                     val isSelected = state.type == type
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { viewModel.setType(type) },
+                            .clickable {
+                                val page = AddTransactionViewModel.getPageForType(type)
+                                scope.launch { pagerState.animateScrollToPage(page) }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -127,30 +134,31 @@ fun AddTransactionScreen(
 
         HorizontalDivider()
 
-        Column(
+        LaunchedEffect(pagerState.currentPage) {
+            viewModel.setPage(pagerState.currentPage)
+        }
+
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Dimens.md)
-        ) {
-            Spacer(Modifier.height(Dimens.sm))
-            AnimatedContent(
-                targetState = state.type,
-                transitionSpec = {
-                    val from = AddTransactionViewModel.typeList.indexOf(initialState).coerceAtLeast(0)
-                    val to = AddTransactionViewModel.typeList.indexOf(targetState).coerceAtLeast(0)
-                    val dir = if (to > from) 1 else -1
-                    slideInHorizontally(tween(250)) { w -> dir * w } togetherWith
-                        slideOutHorizontally(tween(250)) { w -> -dir * w }
-                },
-                label = "category_switch"
-            ) { _ ->
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = Dimens.md),
+            beyondViewportPageCount = 1
+        ) { page ->
+            val pageType = AddTransactionViewModel.getTypeForPage(page)
+            val cats = state.allCategories[pageType] ?: emptyList()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                state.categories.take(12).forEach { category ->
+                Spacer(Modifier.height(Dimens.sm))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    cats.take(12).forEach { category ->
                     val isSelected = state.selectedCategory?.id == category.id
                     Column(
                         modifier = Modifier
