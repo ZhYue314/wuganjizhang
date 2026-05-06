@@ -57,6 +57,7 @@ import com.seamless.bookkeeper.presentation.screens.transaction.TransactionDetai
 import com.seamless.bookkeeper.presentation.theme.Dimens
 import com.seamless.bookkeeper.presentation.theme.ExpenseLight
 import com.seamless.bookkeeper.presentation.theme.IncomeLight
+import com.seamless.bookkeeper.presentation.theme.TransferLight
 import com.seamless.bookkeeper.util.CurrencyUtil
 import com.seamless.bookkeeper.util.DateUtil
 import java.math.BigDecimal
@@ -325,9 +326,9 @@ fun TransactionCard(
                 )
             }
             Text(
-                "${if (isExpense) "-" else "+"}${CurrencyUtil.formatCNY(tx.amount)}",
+                "${if (isExpense) "-" else if (tx.type == "TRANSFER") "" else "+"}${tx.amount.setScale(2, java.math.RoundingMode.HALF_UP)}",
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-                color = if (isExpense) ExpenseLight else IncomeLight
+                color = when (tx.type) { "EXPENSE" -> ExpenseLight; "TRANSFER" -> TransferLight; else -> IncomeLight }
             )
         }
     }

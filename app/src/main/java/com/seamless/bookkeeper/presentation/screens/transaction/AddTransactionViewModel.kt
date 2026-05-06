@@ -84,6 +84,17 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(selectedCategory = category)
     }
 
+    fun setMerchantName(name: String) { _uiState.value = _uiState.value.copy(merchantName = name) }
+    fun setNote(note: String) { _uiState.value = _uiState.value.copy(note = note) }
+    fun cycleAccount() {
+        val accounts = _uiState.value.accounts
+        if (accounts.isEmpty()) return
+        val current = _uiState.value.selectedAccount
+        val idx = accounts.indexOf(current)
+        val next = accounts.getOrElse((idx + 1) % accounts.size) { accounts.first() }
+        _uiState.value = _uiState.value.copy(selectedAccount = next)
+    }
+
     fun appendDigit(digit: String) {
         val current = _uiState.value.amount
         if (digit == ".") {
@@ -113,22 +124,36 @@ class AddTransactionViewModel @Inject constructor(
 
     fun save(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            val state = _uiState.value
-            val amount = state.amount.toBigDecimalOrNull() ?: return@launch
+            val s = _uiState.value
+            val amount = s.amount.toBigDecimalOrNull() ?: return@launch
             if (amount <= BigDecimal.ZERO) return@launch
             transactionRepository.insert(TransactionEntity(
                 amount = amount,
-                type = state.type,
-                categoryId = state.selectedCategory?.id,
-                accountId = state.selectedAccount?.id ?: return@launch,
-                merchantName = state.merchantName.ifBlank { null },
-                note = state.note.ifBlank { null },
-                timestamp = state.timestamp,
+                type = s.type,
+                categoryId = s.selectedCategory?.id,
+                accountId = s.selectedAccount?.id ?: return@launch,
+                merchantName = s.merchantName.ifBlank { null },
+                note = s.note.ifBlank { null },
+                timestamp = s.timestamp,
                 source = "MANUAL",
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             ))
+            resetState()
             onSuccess()
         }
+    }
+
+    fun resetState() {
+        val accounts = _uiState.value.accounts
+        val cats = _uiState.value.allCategories["EXPENSE"] ?: emptyList()
+        _uiState.value = AddTransactionUiState(
+            categories = cats,
+            allCategories = _uiState.value.allCategories,
+            accounts = accounts,
+            selectedAccount = accounts.firstOrNull { it.isDefault } ?: accounts.firstOrNull(),
+            selectedCategory = cats.firstOrNull(),
+            timestamp = System.currentTimeMillis()
+        )
     }
 }

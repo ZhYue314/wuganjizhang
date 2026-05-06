@@ -26,11 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -64,6 +67,32 @@ fun AddTransactionScreen(
     val state by viewModel.uiState.collectAsState()
     val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
         .format(java.util.Date(state.timestamp))
+
+    LaunchedEffect(Unit) { viewModel.resetState() }
+
+    var showMerchantDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
+
+    if (showMerchantDialog) {
+        var text by remember { mutableStateOf(state.merchantName) }
+        AlertDialog(
+            onDismissRequest = { showMerchantDialog = false },
+            title = { Text("商户") },
+            text = { OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton(onClick = { viewModel.setMerchantName(text); showMerchantDialog = false }) { Text("确定") } },
+            dismissButton = { TextButton(onClick = { showMerchantDialog = false }) { Text("取消") } }
+        )
+    }
+    if (showNoteDialog) {
+        var text by remember { mutableStateOf(state.note) }
+        AlertDialog(
+            onDismissRequest = { showNoteDialog = false },
+            title = { Text("备注") },
+            text = { OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = false, maxLines = 3, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton(onClick = { viewModel.setNote(text); showNoteDialog = false }) { Text("确定") } },
+            dismissButton = { TextButton(onClick = { showNoteDialog = false }) { Text("取消") } }
+        )
+    }
 
     val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
     val pagerState = rememberPagerState(
@@ -260,22 +289,22 @@ fun AddTransactionScreen(
                 .padding(horizontal = Dimens.md, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
-            AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
-            AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
+            AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { viewModel.cycleAccount() })
+            AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
+            AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
             AuxField("时间", dateStr, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun AuxField(label: String, value: String, modifier: Modifier = Modifier) {
+private fun AuxField(label: String, value: String, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Box(
         modifier = modifier
             .height(44.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .clickable { },
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
