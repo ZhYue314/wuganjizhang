@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -101,6 +104,13 @@ fun AddTransactionScreen(
 
     // Time picker overlay
     if (showTimePicker) {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = state.timestamp }
+        var selYear by remember { mutableStateOf(cal.get(java.util.Calendar.YEAR)) }
+        var selMonth by remember { mutableStateOf(cal.get(java.util.Calendar.MONTH)) }
+        var selDay by remember { mutableStateOf(cal.get(java.util.Calendar.DAY_OF_MONTH)) }
+        val years = (2000..2100).toList()
+        val months = (1..12).toList()
+        val days = (1..31).toList()
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,7 +118,6 @@ fun AddTransactionScreen(
                 .clickable { showTimePicker = false },
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Simplified - just a card with "取消" / "日期" / "确定"
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,15 +126,28 @@ fun AddTransactionScreen(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(Dimens.md),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = { showTimePicker = false }) { Text("取消") }
-                    Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
-                    TextButton(onClick = { showTimePicker = false }) { Text("确定") }
+                    Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = {
+                        val c = java.util.Calendar.getInstance()
+                        c.set(selYear, selMonth, selDay)
+                        viewModel.setTimestamp(c.timeInMillis)
+                        showTimePicker = false
+                    }) { Text("确定") }
                 }
                 HorizontalDivider()
-                Text("选择日期", modifier = Modifier.padding(Dimens.md), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(100.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(200.dp).padding(horizontal = Dimens.sm),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SelectableList(years, selYear, Modifier.weight(1f)) { selYear = it }
+                    SelectableList(months, selMonth + 1, Modifier.weight(1f)) { selMonth = it - 1 }
+                    SelectableList(days, selDay, Modifier.weight(1f)) { selDay = it }
+                }
+                Spacer(Modifier.height(20.dp))
             }
         }
     }
@@ -418,6 +440,40 @@ private fun KeypadRow(keys: List<String>, onDigit: (String) -> Unit, onDelete: (
                 Key(key, Modifier.weight(1f), bg = MaterialTheme.colorScheme.surfaceVariant) { onDelete() }
             } else {
                 Key(key, Modifier.weight(1f)) { onDigit(key) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectableList(values: List<Int>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
+    val idx = values.indexOf(selected).coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (idx - 3).coerceAtLeast(0))
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        val label = when {
+            values.all { it in 2000..2100 } -> "年"
+            values.all { it in 1..12 } -> "月"
+            else -> "日"
+        }
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(values) { v ->
+                val isSel = v == selected
+                Text(
+                    "$v",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(v) }
+                        .padding(vertical = 6.dp),
+                    textAlign = TextAlign.Center,
+                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    fontSize = if (isSel) 18.sp else 14.sp
+                )
             }
         }
     }

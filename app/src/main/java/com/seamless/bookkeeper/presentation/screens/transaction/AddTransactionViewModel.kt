@@ -91,6 +91,7 @@ class AddTransactionViewModel @Inject constructor(
 
     fun setMerchantName(name: String) { _uiState.value = _uiState.value.copy(merchantName = name) }
     fun setNote(note: String) { _uiState.value = _uiState.value.copy(note = note) }
+    fun setTimestamp(timestamp: Long) { _uiState.value = _uiState.value.copy(timestamp = timestamp) }
     fun cycleAccount() {
         val accounts = _uiState.value.accounts
         if (accounts.isEmpty()) return
