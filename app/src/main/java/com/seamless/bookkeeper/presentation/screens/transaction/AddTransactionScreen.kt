@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -154,36 +155,50 @@ fun AddTransactionScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 Spacer(Modifier.height(Dimens.sm))
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    cats.take(12).forEach { category ->
-                        val isSelected = state.selectedCategory?.id == category.id
-                        Column(
-                            modifier = Modifier
-                                .width(68.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (isSelected) Color(category.color).copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                )
-                                .then(if (isSelected) Modifier.border(1.5.dp, Color(category.color), RoundedCornerShape(12.dp)) else Modifier)
-                                .clickable { viewModel.setCategory(category) }
-                                .padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier.size(36.dp).clip(CircleShape).background(
-                                    if (isSelected) Color(category.color) else MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                                contentAlignment = Alignment.Center
-                            ) { Text(category.icon, fontSize = 18.sp) }
-                            Spacer(Modifier.height(2.dp))
-                            Text(category.name, style = MaterialTheme.typography.bodySmall,
-                                textAlign = TextAlign.Center, maxLines = 1,
-                                color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface)
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val gap = 8.dp
+                    val itemW = 68.dp
+                    val availW = maxWidth
+                    val perRow = ((availW + gap) / (itemW + gap)).toInt().coerceAtLeast(1)
+                    val list = cats.take(12)
+                    val chunks = list.chunked(perRow)
+                    Column {
+                        for (idx in chunks.indices) {
+                            val chunk = chunks[idx]
+                            val full = chunk.size == perRow
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = if (full) Arrangement.SpaceEvenly else Arrangement.Start
+                            ) {
+                                chunk.forEach { category ->
+                                    val isSelected = state.selectedCategory?.id == category.id
+                                    Column(
+                                        modifier = Modifier
+                                            .width(itemW)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(
+                                                if (isSelected) Color(category.color).copy(alpha = 0.15f)
+                                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                            .then(if (isSelected) Modifier.border(1.5.dp, Color(category.color), RoundedCornerShape(12.dp)) else Modifier)
+                                            .clickable { viewModel.setCategory(category) }
+                                            .padding(vertical = 8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.size(36.dp).clip(CircleShape).background(
+                                                if (isSelected) Color(category.color) else MaterialTheme.colorScheme.surfaceVariant
+                                            ),
+                                            contentAlignment = Alignment.Center
+                                        ) { Text(category.icon, fontSize = 18.sp) }
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(category.name, style = MaterialTheme.typography.bodySmall,
+                                            textAlign = TextAlign.Center, maxLines = 1,
+                                            color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface)
+                                    }
+                                }
+                            }
+                            if (idx < chunks.lastIndex) Spacer(Modifier.height(gap))
                         }
                     }
                 }
