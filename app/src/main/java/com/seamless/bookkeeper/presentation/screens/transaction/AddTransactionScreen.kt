@@ -56,7 +56,6 @@ fun AddTransactionScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Top bar: back arrow + type selector
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,133 +76,125 @@ fun AddTransactionScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) when (type) {
-                            "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
+                            "EXPENSE" -> ExpenseLight
+                            "INCOME" -> IncomeLight
                             else -> MaterialTheme.colorScheme.primary
                         } else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.clickable { viewModel.setType(type) }
                     )
                 }
             }
+        }
 
-            // Divider
-            HorizontalDivider()
+        HorizontalDivider()
 
-            // Scrollable: Category grid
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Dimens.md)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.md)
+        ) {
+            Spacer(Modifier.height(Dimens.sm))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Spacer(Modifier.height(Dimens.sm))
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    state.categories.take(12).forEach { category ->
-                        val isSelected = state.selectedCategory?.id == category.id
-                        Column(
-                            modifier = Modifier
-                                .width(68.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (isSelected) Color(category.color).copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                )
-                                .then(
-                                    if (isSelected) Modifier.border(
-                                        1.5.dp, Color(category.color), RoundedCornerShape(12.dp)
-                                    ) else Modifier
-                                )
-                                .clickable { viewModel.setCategory(category) }
-                                .padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp).clip(CircleShape)
-                                    .background(
-                                        if (isSelected) Color(category.color)
-                                        else MaterialTheme.colorScheme.surfaceVariant
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) { Text(category.icon, fontSize = 18.sp) }
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                category.name,
-                                style = MaterialTheme.typography.bodySmall,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface
+                state.categories.take(12).forEach { category ->
+                    val isSelected = state.selectedCategory?.id == category.id
+                    Column(
+                        modifier = Modifier
+                            .width(68.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isSelected) Color(category.color).copy(alpha = 0.15f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             )
-                        }
+                            .then(
+                                if (isSelected) Modifier.border(
+                                    1.5.dp, Color(category.color), RoundedCornerShape(12.dp)
+                                ) else Modifier
+                            )
+                            .clickable { viewModel.setCategory(category) }
+                            .padding(vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp).clip(CircleShape)
+                                .background(
+                                    if (isSelected) Color(category.color)
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) { Text(category.icon, fontSize = 18.sp) }
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            category.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
+        }
 
-            // Divider
-            HorizontalDivider()
+        HorizontalDivider()
 
-            // Amount box
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .padding(horizontal = Dimens.md, vertical = 4.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(
-                    text = "¥ ${state.amount.ifBlank { "0.00" }}",
-                    modifier = Modifier.padding(start = 16.dp),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = when (state.type) {
-                        "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                )
-            }
-
-            // Divider
-            HorizontalDivider()
-
-            // Numeric keypad (custom layout: 4 columns)
-            NumericKeypad(
-                onDigit = { viewModel.appendDigit(it) },
-                onDelete = { viewModel.deleteLastDigit() },
-                onClear = { viewModel.clearAmount() },
-                onConfirm = {
-                    if (state.amount.isNotBlank() && state.amount != "0") {
-                        viewModel.save(onDismiss)
-                    }
-                },
-                onSaveAndAdd = {
-                    if (state.amount.isNotBlank() && state.amount != "0") {
-                        viewModel.save {
-                            viewModel.clearAmount()
-                        }
-                    }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .padding(horizontal = Dimens.md, vertical = 4.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = "¥ ${state.amount.ifBlank { "0.00" }}",
+                modifier = Modifier.padding(start = 16.dp),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = when (state.type) {
+                    "EXPENSE" -> ExpenseLight
+                    "INCOME" -> IncomeLight
+                    else -> MaterialTheme.colorScheme.onSurface
                 }
             )
+        }
 
-            // Divider
-            HorizontalDivider()
+        HorizontalDivider()
 
-            // Bottom: 4 aux fields
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.md, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
-                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
-                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
-                AuxField("时间", dateStr, Modifier.weight(1f))
+        NumericKeypad(
+            onDigit = { viewModel.appendDigit(it) },
+            onDelete = { viewModel.deleteLastDigit() },
+            onClear = { viewModel.clearAmount() },
+            onConfirm = {
+                if (state.amount.isNotBlank() && state.amount != "0") {
+                    viewModel.save(onDismiss)
+                }
+            },
+            onSaveAndAdd = {
+                if (state.amount.isNotBlank() && state.amount != "0") {
+                    viewModel.save { viewModel.clearAmount() }
+                }
             }
+        )
+
+        HorizontalDivider()
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.md, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
+            AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
+            AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
+            AuxField("时间", dateStr, Modifier.weight(1f))
         }
     }
 }
@@ -242,90 +233,80 @@ private fun NumericKeypad(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        // Row 1: 1 2 3 ⌫
         KeypadRow(listOf("1", "2", "3", "⌫"), onDigit, onDelete)
         Spacer(Modifier.height(4.dp))
-        // Row 2: 4 5 6 +
         KeypadRow(listOf("4", "5", "6", "+"), onDigit, onDelete)
         Spacer(Modifier.height(4.dp))
-        // Row 3: 7 8 9 -
         KeypadRow(listOf("7", "8", "9", "-"), onDigit, onDelete)
         Spacer(Modifier.height(4.dp))
-        // Row 4: . 0 再记 完成
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // . button
-            Box(
-                modifier = Modifier.weight(1f).height(50.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .clickable { onDigit(".") },
-                contentAlignment = Alignment.Center
-            ) { Text(".", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Medium) }
-            // 0 button
-            Box(
-                modifier = Modifier.weight(1f).height(50.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .clickable { onDigit("0") },
-                contentAlignment = Alignment.Center
-            ) { Text("0", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Medium) }
-            // 再记 button
-            Box(
-                modifier = Modifier
-                    .weight(1f).height(50.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onSaveAndAdd() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text("再记", fontWeight = FontWeight.Medium, fontSize = 16.sp)
-            }
-            // 完成 button
-            Box(
-                modifier = Modifier
-                    .weight(1f).height(50.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable { onConfirm() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text("完成", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Key(".", Modifier.weight(1f)) { onDigit(".") }
+            Key("0", Modifier.weight(1f)) { onDigit("0") }
+            ActionKey("再记", Modifier.weight(1f)) { onSaveAndAdd() }
+            PrimaryKey("完成", Modifier.weight(1f)) { onConfirm() }
+        }
+    }
+}
+
+@Composable
+private fun KeypadRow(keys: List<String>, onDigit: (String) -> Unit, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        keys.forEach { key ->
+            if (key == "⌫") {
+                Key(key, Modifier.weight(1f), bg = MaterialTheme.colorScheme.surfaceVariant) { onDelete() }
+            } else {
+                Key(key, Modifier.weight(1f)) { onDigit(key) }
             }
         }
     }
 }
 
 @Composable
-private fun KeypadRow(
-    keys: List<String>,
-    onDigit: (String) -> Unit,
-    onDelete: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+private fun Key(text: String, modifier: Modifier = Modifier, bg: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .height(50.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(bg)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        keys.forEach { key ->
-            Box(
-                modifier = Modifier
-                    .weight(1f).height(50.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .clickable {
-                        if (key == "⌫") onDelete() else onDigit(key)
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    key,
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
+        Text(text, style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
+private fun ActionKey(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .height(50.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, fontWeight = FontWeight.Medium, fontSize = 16.sp)
+    }
+}
+
+@Composable
+private fun PrimaryKey(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .height(50.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }
