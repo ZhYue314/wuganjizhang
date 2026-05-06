@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,7 +118,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             NavHost(
                 navController = navController,
                 startDestination = BottomNavItem.Home.route,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
             ) {
                 composable(
                     route = BottomNavItem.Home.route,
