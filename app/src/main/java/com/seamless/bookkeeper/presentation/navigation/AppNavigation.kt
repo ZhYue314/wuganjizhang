@@ -166,7 +166,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     visible = route == Routes.ADD_TRANSACTION,
                     enter = slideInHorizontally(tween(300)) { it },
                     exit = slideOutHorizontally(tween(300)) { it },
-                    modifier = Modifier.fillMaxSize().statusBarsPadding()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .statusBarsPadding()
                 ) {
                     AddTransactionScreen(
                         onDismiss = { navController.popBackStack() }
