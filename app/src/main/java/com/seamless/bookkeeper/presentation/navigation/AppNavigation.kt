@@ -110,21 +110,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Scaffold(
                 modifier = modifier,
                 bottomBar = {
-                    BottomNavigationBar(
-                        navController = navController,
-                        visible = drawerEnabled
-                    )
+                    if (drawerEnabled) {
+                        BottomNavigationBar(navController = navController)
+                    }
                 }
             ) { innerPadding ->
-            val navPadding = if (route == Routes.ADD_TRANSACTION) {
-                PaddingValues(top = innerPadding.calculateTopPadding())
-            } else {
-                innerPadding
-            }
             NavHost(
                 navController = navController,
                 startDestination = BottomNavItem.Home.route,
-                modifier = Modifier.padding(navPadding)
+                modifier = Modifier.padding(innerPadding)
             ) {
                 composable(
                     route = BottomNavItem.Home.route,
@@ -171,13 +165,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController, visible: Boolean = true) {
+fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(BottomNavItem.Home, BottomNavItem.Stats, BottomNavItem.Calendar)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        modifier = Modifier.alpha(if (visible) 1f else 0f),
         containerColor = MaterialTheme.colorScheme.background
     ) {
         items.forEach { item ->
