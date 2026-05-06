@@ -156,7 +156,7 @@ fun AddTransactionScreen(
                 Spacer(Modifier.height(Dimens.sm))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     cats.take(12).forEach { category ->
@@ -195,7 +195,7 @@ fun AddTransactionScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(60.dp)
                 .padding(horizontal = Dimens.md, vertical = 4.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
