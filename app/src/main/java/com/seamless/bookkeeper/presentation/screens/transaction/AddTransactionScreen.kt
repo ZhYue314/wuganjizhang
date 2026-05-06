@@ -80,7 +80,7 @@ fun AddTransactionScreen(
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 ),
                 windowInsets = WindowInsets(0, 0, 0, 0)
             )
@@ -89,6 +89,7 @@ fun AddTransactionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
         ) {
             // Scrollable content area
             Column(
