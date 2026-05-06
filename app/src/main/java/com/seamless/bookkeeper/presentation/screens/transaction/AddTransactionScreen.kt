@@ -209,6 +209,8 @@ fun AddTransactionScreen(
                 Spacer(Modifier.height(Dimens.md))
 
                 // Auxiliary fields (4 items in one row, each 25%)
+                val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+                    .format(java.util.Date(state.timestamp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -216,7 +218,7 @@ fun AddTransactionScreen(
                     AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
                     AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
                     AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
-                    AuxField("时间", "现在", Modifier.weight(1f))
+                    AuxField("时间", dateStr, Modifier.weight(1f))
                 }
             }
 
@@ -240,19 +242,28 @@ fun AddTransactionScreen(
 private fun AuxField(label: String, value: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height(52.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .clickable { },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            "$label: $value",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
     }
 }
 
