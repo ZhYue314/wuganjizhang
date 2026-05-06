@@ -156,10 +156,12 @@ fun AddTransactionScreen(
             ) {
                 Spacer(Modifier.height(Dimens.sm))
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val gap = 8.dp
                     val itemW = 68.dp
                     val availW = maxWidth
-                    val perRow = ((availW + gap) / (itemW + gap)).toInt().coerceAtLeast(1)
+                    val perRow = ((availW + 8.dp) / (itemW + 8.dp)).toInt().coerceAtLeast(1)
+                    val itemsW = itemW * perRow
+                    val remainW = availW - itemsW
+                    val evenGap = remainW / (perRow + 1f)
                     val list = cats.take(12)
                     val chunks = list.chunked(perRow)
                     Column {
@@ -168,7 +170,8 @@ fun AddTransactionScreen(
                             val full = chunk.size == perRow
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = if (full) Arrangement.SpaceEvenly else Arrangement.Start
+                                horizontalArrangement = if (full) Arrangement.SpaceEvenly
+                                else Arrangement.spacedBy(evenGap)
                             ) {
                                 chunk.forEach { category ->
                                     val isSelected = state.selectedCategory?.id == category.id
@@ -198,7 +201,7 @@ fun AddTransactionScreen(
                                     }
                                 }
                             }
-                            if (idx < chunks.lastIndex) Spacer(Modifier.height(gap))
+                            if (idx < chunks.lastIndex) Spacer(Modifier.height(evenGap))
                         }
                     }
                 }
