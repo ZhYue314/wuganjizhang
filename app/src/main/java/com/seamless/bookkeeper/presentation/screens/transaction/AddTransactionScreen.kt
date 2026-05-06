@@ -156,7 +156,7 @@ fun AddTransactionScreen(
                 Spacer(Modifier.height(Dimens.sm))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     cats.take(12).forEach { category ->
