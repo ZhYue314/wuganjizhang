@@ -165,4 +165,17 @@ interface TransactionDao {
 
     @RawQuery(observedEntities = [TransactionEntity::class])
     suspend fun searchRaw(query: SupportSQLiteQuery): List<TransactionEntity>
+
+    @Query("""
+        SELECT t.*, c.name as category_name, c.color as category_color,
+               a.name as account_name
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        LEFT JOIN accounts a ON t.account_id = a.id
+        WHERE t.is_archived = 0
+        ORDER BY t.timestamp DESC
+        LIMIT 200
+    """)
+    @Transaction
+    fun getAllWithRelationsFlow(): Flow<List<TransactionWithRelations>>
 }

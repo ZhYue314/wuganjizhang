@@ -54,4 +54,6 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun findSimilar(merchantName: String?, excludeId: Long): List<TransactionEntity> = transactionDao.findSimilar(merchantName, excludeId)
 
     override suspend fun getAllWithRelations(limit: Int, offset: Int): List<TransactionWithRelations> = transactionDao.getAllWithRelations(limit, offset)
+
+    override fun getAllWithRelationsFlow(): Flow<List<TransactionWithRelations>> = transactionDao.getAllWithRelationsFlow()
 }

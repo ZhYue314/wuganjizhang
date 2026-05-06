@@ -25,4 +25,5 @@ interface TransactionRepository {
     suspend fun getMerchantCategoryStats(): List<MerchantCategoryStat>
     suspend fun findSimilar(merchantName: String?, excludeId: Long): List<TransactionEntity>
     suspend fun getAllWithRelations(limit: Int = 50, offset: Int = 0): List<TransactionWithRelations>
+    fun getAllWithRelationsFlow(): Flow<List<TransactionWithRelations>>
 }
