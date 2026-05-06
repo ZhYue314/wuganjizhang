@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -92,7 +93,10 @@ fun HomeScreen(
                             )
                         }
                     },
-                    windowInsets = WindowInsets(0, 0, 0, 0)
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
             } else {
                 TopAppBar(
@@ -107,7 +111,10 @@ fun HomeScreen(
                             Icon(Icons.Default.Search, contentDescription = "搜索")
                         }
                     },
-                    windowInsets = WindowInsets(0, 0, 0, 0)
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
             }
         },
