@@ -2,6 +2,7 @@ package com.seamless.bookkeeper.presentation.screens.transaction
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,7 +23,11 @@ import androidx.compose.ui.unit.dp
 import com.seamless.bookkeeper.data.local.entity.TransactionWithRelations
 import com.seamless.bookkeeper.presentation.common.BookkeeperBottomSheet
 import com.seamless.bookkeeper.presentation.common.DangerButton
-import java.math.BigDecimal
+import com.seamless.bookkeeper.presentation.theme.Dimens
+import com.seamless.bookkeeper.presentation.theme.ExpenseLight
+import com.seamless.bookkeeper.presentation.theme.IncomeLight
+import com.seamless.bookkeeper.util.CurrencyUtil
+import com.seamless.bookkeeper.util.DateUtil
 
 @Composable
 fun TransactionDetailSheet(
@@ -34,42 +39,78 @@ fun TransactionDetailSheet(
 ) {
     BookkeeperBottomSheet(visible = visible, onDismiss = onDismiss) {
         if (transaction != null) {
+            val tx = transaction.transaction
+            val isExpense = tx.type == "EXPENSE"
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
+                    .padding(horizontal = Dimens.lg, vertical = Dimens.md)
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "¥${transaction.transaction.amount.setScale(2, BigDecimal.ROUND_HALF_UP)}",
+                    text = "${if (isExpense) "-" else "+"}${CurrencyUtil.formatCNY(tx.amount)}",
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (transaction.transaction.type == "EXPENSE")
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.primary
+                    color = if (isExpense) ExpenseLight else IncomeLight
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(4.dp))
+
+                Text(
+                    text = tx.merchantName ?: transaction.categoryName ?: "交易",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(Modifier.height(Dimens.lg))
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(Dimens.shapeLarge),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        DetailRow("类型", if (transaction.transaction.type == "EXPENSE") "支出" else "收入")
+                    Column(modifier = Modifier.padding(Dimens.md)) {
+                        DetailRow("类型", if (isExpense) "支出" else if (tx.type == "INCOME") "收入" else "转账")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         DetailRow("分类", transaction.categoryName ?: "未分类")
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         DetailRow("账户", transaction.accountName)
-                        transaction.transaction.merchantName?.let { DetailRow("商户", it) }
-                        transaction.transaction.note?.let { DetailRow("备注", it) }
+                        if (tx.merchantName != null) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            DetailRow("商户", tx.merchantName)
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        DetailRow("时间", DateUtil.formatDateTime(tx.timestamp))
+                        if (!tx.note.isNullOrBlank()) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            DetailRow("备注", tx.note)
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.sm))
 
-                HorizontalDivider()
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(Dimens.shapeMedium),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(Dimens.md)) {
+                        DetailRow("来源", when (tx.source) {
+                            "AUTO" -> "自动识别"
+                            "MANUAL" -> "手动录入"
+                            "PERIODIC" -> "周期生成"
+                            "FUSED" -> "融合识别"
+                            else -> tx.source
+                        })
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        DetailRow("置信度", "${(tx.confidence * 100).toInt()}%")
+                    }
+                }
+
+                Spacer(Modifier.height(Dimens.md))
 
                 DangerButton(text = "删除此交易", onClick = onDelete)
+                Spacer(Modifier.height(Dimens.lg))
             }
         }
     }
@@ -78,10 +119,9 @@ fun TransactionDetailSheet(
 @Composable
 private fun DetailRow(label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)

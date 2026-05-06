@@ -46,10 +46,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.seamless.bookkeeper.data.local.entity.CategoryEntity
+import com.seamless.bookkeeper.presentation.common.BookkeeperBottomSheet
+
+@Composable
+fun AddTransactionScreen(
+    visible: Boolean = true,
+    onDismiss: () -> Unit
+) {
+    BookkeeperBottomSheet(visible = visible, onDismiss = onDismiss) {
+        AddTransactionContent(onDismiss = onDismiss)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun AddTransactionScreen(
+fun AddTransactionContent(
     onDismiss: () -> Unit,
     viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
