@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
@@ -106,11 +107,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Scaffold(
                 modifier = modifier,
                 bottomBar = {
-                    Box(Modifier.height(64.dp)) {
-                        if (drawerEnabled) {
-                            BottomNavigationBar(navController = navController)
-                        }
-                    }
+                    BottomNavigationBar(
+                        navController = navController,
+                        visible = drawerEnabled
+                    )
                 }
             ) { innerPadding ->
             NavHost(
@@ -163,12 +163,14 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavigationBar(navController: NavHostController, visible: Boolean = true) {
     val items = listOf(BottomNavItem.Home, BottomNavItem.Stats, BottomNavItem.Calendar)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar {
+    NavigationBar(
+        modifier = Modifier.alpha(if (visible) 1f else 0f)
+    ) {
         items.forEach { item ->
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
