@@ -1,8 +1,8 @@
 package com.seamless.bookkeeper.presentation.navigation
 
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -142,10 +142,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
                 composable(
                     route = Routes.ADD_TRANSACTION,
-                    enterTransition = { slideInVertically(tween(300)) { it } },
-                    exitTransition = { slideOutVertically(tween(300)) { -it } },
-                    popEnterTransition = { slideInVertically(tween(300)) { -it } },
-                    popExitTransition = { slideOutVertically(tween(300)) { it } }
+                    enterTransition = { slideInHorizontally(tween(300)) { it } },
+                    exitTransition = { slideOutHorizontally(tween(300)) { -it } },
+                    popEnterTransition = { slideInHorizontally(tween(300)) { -it } },
+                    popExitTransition = { slideOutHorizontally(tween(300)) { it } }
                 ) {
                     AddTransactionScreen(onDismiss = { navController.popBackStack() })
                 }
