@@ -44,7 +44,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.seamless.bookkeeper.presentation.theme.Dimens
 import com.seamless.bookkeeper.presentation.theme.ExpenseLight
 import com.seamless.bookkeeper.presentation.theme.IncomeLight
-import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -91,6 +90,31 @@ fun AddTransactionScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Top: Type selector
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.md, vertical = Dimens.sm),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
+                    val isSelected = state.type == type
+                    Text(
+                        text = if (isSelected) "<-$label" else label,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) when (type) {
+                            "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
+                            else -> MaterialTheme.colorScheme.primary
+                        } else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.clickable { viewModel.setType(type) }
+                    )
+                }
+            }
+
+            // Divider
+            HorizontalDivider()
+
             // Scrollable: Category grid
             Column(
                 modifier = Modifier
@@ -98,8 +122,6 @@ fun AddTransactionScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = Dimens.md)
             ) {
-                Spacer(Modifier.height(Dimens.sm))
-                Text("选择分类", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(Dimens.sm))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -133,9 +155,7 @@ fun AddTransactionScreen(
                                         else MaterialTheme.colorScheme.surfaceVariant
                                     ),
                                 contentAlignment = Alignment.Center
-                            ) {
-                                Text(category.icon, fontSize = 18.sp)
-                            }
+                            ) { Text(category.icon, fontSize = 18.sp) }
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 category.name,
@@ -152,33 +172,12 @@ fun AddTransactionScreen(
             // Divider
             HorizontalDivider()
 
-            // Fixed: Type segment
-            Row(
+            // Amount box
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Dimens.md, vertical = Dimens.sm),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
-                    val isSelected = state.type == type
-                    Box(
-                        modifier = Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(10.dp))
-                            .background(if (isSelected) when (type) {
-                                "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
-                                else -> MaterialTheme.colorScheme.primary
-                            } else MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { viewModel.setType(type) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(label, color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                    }
-                }
-            }
-
-            // Fixed: Amount box
-            Box(
-                modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = Dimens.md)
+                    .height(52.dp)
+                    .padding(horizontal = Dimens.md, vertical = 4.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.CenterStart
@@ -195,19 +194,10 @@ fun AddTransactionScreen(
                 )
             }
 
-            // Fixed: 4 aux fields
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.md, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
-                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
-                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
-                AuxField("时间", dateStr, Modifier.weight(1f))
-            }
-
-            // Divider + Numeric keypad
+            // Divider
             HorizontalDivider()
+
+            // Numeric keypad (custom layout: 4 columns)
             NumericKeypad(
                 onDigit = { viewModel.appendDigit(it) },
                 onDelete = { viewModel.deleteLastDigit() },
@@ -216,8 +206,31 @@ fun AddTransactionScreen(
                     if (state.amount.isNotBlank() && state.amount != "0") {
                         viewModel.save(onDismiss)
                     }
+                },
+                onSaveAndAdd = {
+                    if (state.amount.isNotBlank() && state.amount != "0") {
+                        viewModel.save {
+                            viewModel.clearAmount()
+                        }
+                    }
                 }
             )
+
+            // Divider
+            HorizontalDivider()
+
+            // Bottom: 4 aux fields
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.md, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
+                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
+                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
+                AuxField("时间", dateStr, Modifier.weight(1f))
+            }
         }
     }
 }
@@ -226,8 +239,8 @@ fun AddTransactionScreen(
 private fun AuxField(label: String, value: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .height(48.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .height(44.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .clickable { },
         contentAlignment = Alignment.Center
@@ -248,45 +261,98 @@ private fun NumericKeypad(
     onDigit: (String) -> Unit,
     onDelete: () -> Unit,
     onClear: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    onSaveAndAdd: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        val keys = listOf(
-            listOf("1", "2", "3"),
-            listOf("4", "5", "6"),
-            listOf("7", "8", "9"),
-            listOf(".", "0", "⌫")
-        )
-        keys.forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+        // Row 1: 1 2 3 ⌫
+        KeypadRow(listOf("1", "2", "3", "⌫"), onDigit, onDelete)
+        Spacer(Modifier.height(4.dp))
+        // Row 2: 4 5 6 +
+        KeypadRow(listOf("4", "5", "6", "+"), onDigit, onDelete)
+        Spacer(Modifier.height(4.dp))
+        // Row 3: 7 8 9 -
+        KeypadRow(listOf("7", "8", "9", "-"), onDigit, onDelete)
+        Spacer(Modifier.height(4.dp))
+        // Row 4: . 0 再记 完成
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // . button
+            Box(
+                modifier = Modifier.weight(1f).height(50.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable { onDigit(".") },
+                contentAlignment = Alignment.Center
+            ) { Text(".", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Medium) }
+            // 0 button
+            Box(
+                modifier = Modifier.weight(1f).height(50.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable { onDigit("0") },
+                contentAlignment = Alignment.Center
+            ) { Text("0", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Medium) }
+            // 再记 button
+            Box(
+                modifier = Modifier
+                    .weight(1f).height(50.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { onSaveAndAdd() },
+                contentAlignment = Alignment.Center
             ) {
-                row.forEach { key ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f).height(50.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (key == "⌫") MaterialTheme.colorScheme.surfaceVariant
-                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            )
-                            .clickable {
-                                if (key == "⌫") onDelete() else onDigit(key)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(key, style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = if (key == "⌫") FontWeight.Normal else FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface)
-                    }
-                }
+                Text("再记", fontWeight = FontWeight.Medium, fontSize = 16.sp)
             }
-            Spacer(Modifier.height(6.dp))
+            // 完成 button
+            Box(
+                modifier = Modifier
+                    .weight(1f).height(50.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable { onConfirm() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("完成", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun KeypadRow(
+    keys: List<String>,
+    onDigit: (String) -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        keys.forEach { key ->
+            Box(
+                modifier = Modifier
+                    .weight(1f).height(50.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable {
+                        if (key == "⌫") onDelete() else onDigit(key)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    key,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
