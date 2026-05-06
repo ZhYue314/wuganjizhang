@@ -60,7 +60,19 @@ fun AddTransactionScreen(
     val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { _, dragAmount ->
+                    if (kotlin.math.abs(dragAmount) > 80f) {
+                        val types = AddTransactionViewModel.typeList
+                        val i = types.indexOf(state.type).coerceAtLeast(0)
+                        val n = if (dragAmount < 0) (i + 1).coerceAtMost(types.lastIndex)
+                        else (i - 1).coerceAtLeast(0)
+                        if (n != i) viewModel.setType(types[n])
+                    }
+                }
+            }
     ) {
         Row(
             modifier = Modifier
@@ -96,7 +108,7 @@ fun AddTransactionScreen(
 
         HorizontalDivider()
 
-        Box(
+        Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
@@ -104,19 +116,7 @@ fun AddTransactionScreen(
         ) {
             Spacer(Modifier.height(Dimens.sm))
             FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures { _, dragAmount ->
-                            if (kotlin.math.abs(dragAmount) > 80f) {
-                                val types = AddTransactionViewModel.typeList
-                                val i = types.indexOf(state.type).coerceAtLeast(0)
-                                val n = if (dragAmount < 0) (i + 1).coerceAtMost(types.lastIndex)
-                                else (i - 1).coerceAtLeast(0)
-                                if (n != i) viewModel.setType(types[n])
-                            }
-                        }
-                    },
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
