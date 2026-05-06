@@ -72,7 +72,7 @@ fun AddTransactionScreen(
                 listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
                     val isSelected = state.type == type
                     Text(
-                        text = if (isSelected) "<-$label" else label,
+                        text = label,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) when (type) {
