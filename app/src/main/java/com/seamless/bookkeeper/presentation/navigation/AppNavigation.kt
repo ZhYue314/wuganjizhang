@@ -46,6 +46,7 @@ import com.seamless.bookkeeper.presentation.screens.category.CategoryManagementS
 import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
 import com.seamless.bookkeeper.presentation.screens.search.SearchScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsScreen
+import com.seamless.bookkeeper.presentation.screens.transaction.AddTransactionScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsViewModel
 import com.seamless.bookkeeper.presentation.screens.stats.StatsScreen
 import com.seamless.bookkeeper.presentation.theme.BookkeeperTheme
@@ -56,6 +57,7 @@ object Routes {
     const val ACCOUNT_MANAGEMENT = "account_management"
     const val SETTINGS = "settings"
     const val SEARCH = "search"
+    const val ADD_TRANSACTION = "add_transaction"
 }
 
 @Composable
@@ -112,7 +114,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 composable(BottomNavItem.Home.route) {
                     HomeScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onSearchClick = { navController.navigate(Routes.SEARCH) }
+                        onSearchClick = { navController.navigate(Routes.SEARCH) },
+                        onAddTransactionClick = { navController.navigate(Routes.ADD_TRANSACTION) }
                     )
                 }
                 composable(BottomNavItem.Stats.route) {
@@ -132,6 +135,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
                 composable(Routes.SEARCH) {
                     SearchScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Routes.ADD_TRANSACTION) {
+                    AddTransactionScreen(onDismiss = { navController.popBackStack() })
                 }
             }
         }

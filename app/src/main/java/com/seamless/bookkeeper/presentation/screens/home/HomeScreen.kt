@@ -51,7 +51,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.seamless.bookkeeper.data.local.entity.TransactionWithRelations
 import com.seamless.bookkeeper.presentation.common.BookkeeperBottomSheet
 import com.seamless.bookkeeper.presentation.common.EmptyState
-import com.seamless.bookkeeper.presentation.screens.transaction.AddTransactionScreen
 import com.seamless.bookkeeper.presentation.screens.transaction.TransactionDetailSheet
 import com.seamless.bookkeeper.presentation.theme.Dimens
 import com.seamless.bookkeeper.presentation.theme.ExpenseLight
@@ -64,10 +63,10 @@ import java.math.BigDecimal
 fun HomeScreen(
     onMenuClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onAddTransactionClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showAddTransaction by remember { mutableStateOf(false) }
     var selectedTransaction by remember { mutableStateOf<TransactionWithRelations?>(null) }
 
     Scaffold(
@@ -111,7 +110,7 @@ fun HomeScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddTransaction = true },
+                onClick = onAddTransactionClick,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "添加交易")
@@ -179,11 +178,6 @@ fun HomeScreen(
         }
     }
 
-    AddTransactionScreen(
-        visible = showAddTransaction,
-        onDismiss = { showAddTransaction = false }
-    )
-
     TransactionDetailSheet(
         transaction = selectedTransaction,
         visible = selectedTransaction != null,
@@ -194,7 +188,7 @@ fun HomeScreen(
         },
         onEdit = {
             selectedTransaction = null
-            showAddTransaction = true
+            onAddTransactionClick()
         }
     )
 }

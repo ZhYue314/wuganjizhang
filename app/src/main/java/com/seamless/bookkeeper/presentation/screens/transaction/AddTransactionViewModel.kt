@@ -38,51 +38,70 @@ class AddTransactionViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AddTransactionUiState())
     val uiState: StateFlow<AddTransactionUiState> = _uiState
 
-    init {
-        loadInitialData()
-    }
+    init { loadData() }
 
-    private fun loadInitialData() {
+    private fun loadData() {
         viewModelScope.launch {
-            val expenseCategories = categoryRepository.getByType("EXPENSE")
+            val expenseCats = categoryRepository.getByType("EXPENSE")
             val accounts = accountRepository.getAllEnabled()
             _uiState.value = _uiState.value.copy(
-                categories = expenseCategories,
+                categories = expenseCats,
                 accounts = accounts,
-                selectedCategory = expenseCategories.firstOrNull(),
                 selectedAccount = accounts.firstOrNull { it.isDefault } ?: accounts.firstOrNull()
             )
         }
     }
 
-    fun setAmount(amount: String) {
-        _uiState.value = _uiState.value.copy(amount = amount)
-    }
-
     fun setType(type: String) {
-        _uiState.value = _uiState.value.copy(type = type)
+        viewModelScope.launch {
+            val cats = when (type) {
+                "EXPENSE" -> categoryRepository.getByType("EXPENSE")
+                "INCOME" -> categoryRepository.getByType("INCOME")
+                else -> emptyList()
+            }
+            val selected = if (cats.any { it.id == _uiState.value.selectedCategory?.id }) {
+                _uiState.value.selectedCategory
+            } else cats.firstOrNull()
+            _uiState.value = _uiState.value.copy(type = type, categories = cats, selectedCategory = selected)
+        }
     }
 
     fun setCategory(category: CategoryEntity) {
         _uiState.value = _uiState.value.copy(selectedCategory = category)
     }
 
-    fun setAccount(account: AccountEntity) {
-        _uiState.value = _uiState.value.copy(selectedAccount = account)
+    fun appendDigit(digit: String) {
+        val current = _uiState.value.amount
+        if (digit == ".") {
+            if (current.contains(".")) return
+            _uiState.value = _uiState.value.copy(amount = if (current.isEmpty()) "0." else "$current.")
+        } else {
+            if (current.contains(".")) {
+                val parts = current.split(".")
+                if (parts.size == 2 && parts[1].length >= 2) return
+            }
+            val newAmount = current + digit
+            if (newAmount.length > 12) return
+            _uiState.value = _uiState.value.copy(amount = newAmount)
+        }
     }
 
-    fun setMerchantName(name: String) {
-        _uiState.value = _uiState.value.copy(merchantName = name)
+    fun deleteLastDigit() {
+        val current = _uiState.value.amount
+        if (current.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(amount = current.dropLast(1))
+        }
     }
 
-    fun setNote(note: String) {
-        _uiState.value = _uiState.value.copy(note = note)
+    fun clearAmount() {
+        _uiState.value = _uiState.value.copy(amount = "")
     }
 
-    fun save(callback: () -> Unit) {
+    fun save(onSuccess: () -> Unit) {
         viewModelScope.launch {
             val state = _uiState.value
             val amount = state.amount.toBigDecimalOrNull() ?: return@launch
+            if (amount <= BigDecimal.ZERO) return@launch
 
             transactionRepository.insert(TransactionEntity(
                 amount = amount,
@@ -96,7 +115,7 @@ class AddTransactionViewModel @Inject constructor(
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             ))
-            callback()
+            onSuccess()
         }
     }
 }
