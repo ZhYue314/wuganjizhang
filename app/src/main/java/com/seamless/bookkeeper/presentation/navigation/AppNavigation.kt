@@ -1,10 +1,14 @@
 package com.seamless.bookkeeper.presentation.navigation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -105,7 +109,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Scaffold(
                 modifier = modifier,
                 bottomBar = {
-                    BottomNavigationBar(navController = navController)
+                    Box(Modifier.height(64.dp)) {
+                        AnimatedVisibility(
+                            visible = drawerEnabled,
+                            enter = slideInVertically(tween(200)),
+                            exit = slideOutVertically(tween(200))
+                        ) {
+                            BottomNavigationBar(navController = navController)
+                        }
+                    }
                 }
             ) { innerPadding ->
             NavHost(
