@@ -450,7 +450,7 @@ private fun KeypadRow(keys: List<String>, onDigit: (String) -> Unit, onDelete: (
 @Composable
 private fun SelectableList(values: List<Int>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
     val idx = values.indexOf(selected).coerceAtLeast(0)
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (idx - 3).coerceAtLeast(0))
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (idx - 1).coerceAtLeast(0))
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         val label = when {
             values.all { it in 2000..2100 } -> "年"
