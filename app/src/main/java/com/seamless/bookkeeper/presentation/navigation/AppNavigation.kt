@@ -53,6 +53,7 @@ import com.seamless.bookkeeper.presentation.screens.account.AccountManagementScr
 import com.seamless.bookkeeper.presentation.screens.calendar.CalendarScreen
 import com.seamless.bookkeeper.presentation.screens.category.CategoryManagementScreen
 import com.seamless.bookkeeper.presentation.screens.home.HomeScreen
+import com.seamless.bookkeeper.presentation.screens.onboarding.OnboardingScreen
 import com.seamless.bookkeeper.presentation.screens.search.SearchScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsScreen
 import com.seamless.bookkeeper.presentation.screens.settings.SettingsViewModel
@@ -181,6 +182,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 ) {
                     AddTransactionScreen(
                         onDismiss = { navController.popBackStack() }
+                    )
+                }
+
+                if (!settingsState.onboardingCompleted) {
+                    OnboardingScreen(
+                        onComplete = { settingsViewModel.completeOnboarding() }
                     )
                 }
             }

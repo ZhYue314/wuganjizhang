@@ -12,7 +12,8 @@ import javax.inject.Inject
 data class AppSettingsState(
     val isDarkMode: Boolean = false,
     val darkModeValue: String = "SYSTEM",
-    val isAutoMode: Boolean = true
+    val isAutoMode: Boolean = true,
+    val onboardingCompleted: Boolean = true
 )
 
 @HiltViewModel
@@ -38,6 +39,17 @@ class SettingsViewModel @Inject constructor(
                     isAutoMode = mode == "AUTO"
                 )
             }
+        }
+        viewModelScope.launch {
+            userPreferences.isOnboardingCompleted.collect { completed ->
+                _state.value = _state.value.copy(onboardingCompleted = completed)
+            }
+        }
+    }
+
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            userPreferences.setOnboardingCompleted(true)
         }
     }
 
