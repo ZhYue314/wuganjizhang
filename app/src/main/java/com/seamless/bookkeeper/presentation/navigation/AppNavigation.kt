@@ -6,6 +6,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -106,7 +107,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
     ) {
         BookkeeperTheme(darkTheme = settingsState.isDarkMode) {
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 NavHost(
                     navController = navController,
                     startDestination = BottomNavItem.Home.route,
@@ -165,7 +166,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     visible = route == Routes.ADD_TRANSACTION,
                     enter = slideInHorizontally(tween(300)) { it },
                     exit = slideOutHorizontally(tween(300)) { it },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().statusBarsPadding()
                 ) {
                     AddTransactionScreen(
                         onDismiss = { navController.popBackStack() }
