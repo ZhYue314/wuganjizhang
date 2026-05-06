@@ -2,8 +2,9 @@
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -136,7 +137,11 @@ fun AddTransactionScreen(
             AnimatedContent(
                 targetState = state.type,
                 transitionSpec = {
-                    fadeIn(tween(200)) togetherWith fadeOut(tween(120))
+                    val from = AddTransactionViewModel.typeList.indexOf(initialState).coerceAtLeast(0)
+                    val to = AddTransactionViewModel.typeList.indexOf(targetState).coerceAtLeast(0)
+                    val dir = if (to > from) 1 else -1
+                    slideInHorizontally(tween(250)) { w -> dir * w } togetherWith
+                        slideOutHorizontally(tween(250)) { w -> -dir * w }
                 },
                 label = "category_switch"
             ) { _ ->
