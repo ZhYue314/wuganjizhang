@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
@@ -115,10 +116,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     )
                 }
             ) { innerPadding ->
+            val navPadding = if (route == Routes.ADD_TRANSACTION) {
+                PaddingValues(top = innerPadding.calculateTopPadding())
+            } else {
+                innerPadding
+            }
             NavHost(
                 navController = navController,
                 startDestination = BottomNavItem.Home.route,
-                modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
+                modifier = Modifier.padding(navPadding)
             ) {
                 composable(
                     route = BottomNavItem.Home.route,
