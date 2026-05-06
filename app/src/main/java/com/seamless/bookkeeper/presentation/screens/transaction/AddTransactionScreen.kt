@@ -3,15 +3,14 @@ package com.seamless.bookkeeper.presentation.screens.transaction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +44,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.seamless.bookkeeper.presentation.theme.Dimens
 import com.seamless.bookkeeper.presentation.theme.ExpenseLight
 import com.seamless.bookkeeper.presentation.theme.IncomeLight
-import com.seamless.bookkeeper.util.CurrencyUtil
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -55,6 +53,8 @@ fun AddTransactionScreen(
     viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+        .format(java.util.Date(state.timestamp))
 
     Scaffold(
         topBar = {
@@ -91,7 +91,76 @@ fun AddTransactionScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Scrollable content area
+            // Fixed: Type segment
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.md, vertical = Dimens.sm),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
+                    val isSelected = state.type == type
+                    Box(
+                        modifier = Modifier
+                            .weight(1f).height(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isSelected) when (type) {
+                                    "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
+                                    else -> MaterialTheme.colorScheme.primary
+                                } else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                            .clickable { viewModel.setType(type) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            label,
+                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+
+            // Fixed: Amount box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .padding(horizontal = Dimens.md)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = "¥ ${state.amount.ifBlank { "0.00" }}",
+                    modifier = Modifier.padding(start = 16.dp),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = when (state.type) {
+                        "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+
+            // Fixed: 4 aux fields
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.md, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
+                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
+                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
+                AuxField("时间", dateStr, Modifier.weight(1f))
+            }
+
+            // Divider
+            HorizontalDivider(modifier = Modifier.padding(horizontal = Dimens.md))
+
+            // Scrollable: Category grid
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -99,41 +168,6 @@ fun AddTransactionScreen(
                     .padding(horizontal = Dimens.md)
             ) {
                 Spacer(Modifier.height(Dimens.sm))
-
-                // Type segment
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
-                        val isSelected = state.type == type
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) when (type) {
-                                        "EXPENSE" -> ExpenseLight
-                                        "INCOME" -> IncomeLight
-                                        else -> MaterialTheme.colorScheme.primary
-                                    } else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .clickable { viewModel.setType(type) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                label,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(Dimens.md))
-
-                // Category grid
                 Text("选择分类", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(Dimens.sm))
                 FlowRow(
@@ -162,8 +196,7 @@ fun AddTransactionScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
+                                    .size(36.dp).clip(CircleShape)
                                     .background(
                                         if (isSelected) Color(category.color)
                                         else MaterialTheme.colorScheme.surfaceVariant
@@ -183,50 +216,9 @@ fun AddTransactionScreen(
                         }
                     }
                 }
-
-                Spacer(Modifier.height(Dimens.md))
-
-                // Amount display
-                Text("金额", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(Dimens.sm))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = "¥ ${state.amount.ifBlank { "0.00" }}",
-                        modifier = Modifier.padding(start = 16.dp),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = when (state.type) {
-                            "EXPENSE" -> ExpenseLight
-                            "INCOME" -> IncomeLight
-                            else -> MaterialTheme.colorScheme.onSurface
-                        }
-                    )
-                }
-
-                Spacer(Modifier.height(Dimens.md))
-
-                // Auxiliary fields (4 items in one row, each 25%)
-                val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
-                    .format(java.util.Date(state.timestamp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f))
-                    AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f))
-                    AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f))
-                    AuxField("时间", dateStr, Modifier.weight(1f))
-                }
             }
 
-            // Divider + Numeric keypad
+            // Fixed: Numeric keypad
             HorizontalDivider()
             NumericKeypad(
                 onDigit = { viewModel.appendDigit(it) },
@@ -246,27 +238,19 @@ fun AddTransactionScreen(
 private fun AuxField(label: String, value: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .height(52.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .clickable { },
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
+            Text(label, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
+                textAlign = TextAlign.Center, maxLines = 1)
         }
     }
 }
@@ -297,32 +281,24 @@ private fun NumericKeypad(
                 row.forEach { key ->
                     Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp)
+                            .weight(1f).height(50.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(
-                                when (key) {
-                                    "⌫" -> MaterialTheme.colorScheme.surfaceVariant
-                                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                }
+                                if (key == "⌫") MaterialTheme.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             )
                             .clickable {
-                                when (key) {
-                                    "⌫" -> onDelete()
-                                    else -> onDigit(key)
-                                }
+                                if (key == "⌫") onDelete() else onDigit(key)
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            key,
-                            style = MaterialTheme.typography.headlineLarge,
+                        Text(key, style = MaterialTheme.typography.headlineLarge,
                             fontWeight = if (key == "⌫") FontWeight.Normal else FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                            color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
+            Spacer(Modifier.height(6.dp))
         }
     }
 }
