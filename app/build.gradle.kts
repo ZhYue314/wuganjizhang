@@ -1,109 +1,133 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.compose.compiler)
 }
 
 android {
-    namespace = "com.example.wuganjizhang"
-    compileSdk = 36
+    namespace = "com.seamless.bookkeeper"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.wuganjizhang"
-        minSdk = 28
-        targetSdk = 36
+        applicationId = "com.seamless.bookkeeper"
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     buildTypes {
-        release {
+        debug {
             isMinifyEnabled = false
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     buildFeatures {
+        buildConfig = true
         compose = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
 dependencies {
-    // Core Android
+    // AndroidX Core
+    implementation(libs.core.ktx)
     implementation(libs.appcompat)
+    implementation(libs.activity.compose)
     implementation(libs.material)
-    implementation(libs.activity)
     implementation(libs.constraintlayout)
-    
-    // Kotlin Coroutines
-    implementation(libs.coroutines.core)
-    implementation(libs.coroutines.android)
-    
-    // Room Database
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
-    
+
     // Lifecycle
-    implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.runtime.ktx)
-    
-    // DataStore
-    implementation(libs.datastore.preferences)
-    
-    // Jetpack Compose
+    implementation(libs.lifecycle.viewmodel.ktx)
+    implementation(libs.lifecycle.runtime.compose)
+
+    // Compose
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
-    implementation(libs.compose.activity)
-    implementation(libs.compose.lifecycle)
+    implementation(libs.compose.material.icons)
     implementation(libs.compose.runtime.livedata)
-    
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.compose.ui.test)
+
     // Navigation
     implementation(libs.navigation.compose)
-    
+
+    // Room
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    // DataStore
+    implementation(libs.datastore.preferences)
+
+    // WorkManager
+    implementation(libs.work.runtime.ktx)
+
+    // Paging
+    implementation(libs.paging.runtime)
+    implementation(libs.paging.compose)
+
+    // App Startup
+    implementation(libs.startup.runtime)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
-    
-    // Accompanist
-    implementation(libs.accompanist.swiperefresh)
-    
-    // Vico Charts
+    implementation(libs.hilt.work)
+
+    // Coroutines
+    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
+
+    // Charts
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
-    
-    // Legacy View components (for transition)
-    implementation(libs.recyclerview)
-    implementation(libs.viewpager2)
-    implementation(libs.gridlayout)
-    
+
+    // Image
+    implementation(libs.coil.compose)
+
+    // Logging
+    implementation(libs.timber)
+
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    
-    // Compose Tooling
-    debugImplementation(libs.compose.ui.tooling)
-    debugImplementation(libs.compose.ui.test.manifest)
 }

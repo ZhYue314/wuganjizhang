@@ -1,45 +1,69 @@
 [versions]
 agp = "8.7.3"
-kotlin = "2.0.0"
-junit = "4.13.2"
-junitVersion = "1.3.0"
-espressoCore = "3.7.0"
+kotlin = "2.0.21"
+ksp = "2.0.21-1.0.25"
+
+# AndroidX
+core-ktx = "1.13.1"
 appcompat = "1.7.1"
-material = "1.13.0"
-activity = "1.8.0"
-constraintlayout = "2.1.4"
-recyclerview = "1.3.2"
-viewpager2 = "1.0.0"
+activity = "1.9.3"
+lifecycle = "2.8.7"
+navigation = "2.8.5"
 room = "2.6.1"
-lifecycle = "2.7.0"
-gridlayout = "1.0.0"
-compose-bom = "2024.04.01"
-navigation = "2.7.7"
+datastore = "1.1.1"
+work = "2.9.1"
+paging = "3.3.5"
+startup = "1.2.0"
+
+# Compose
+compose-bom = "2024.12.01"
+compose-compiler = "1.5.15"
+
+# Hilt
 hilt = "2.51.1"
 hilt-navigation-compose = "1.2.0"
-datastore = "1.0.0"
-coroutines = "1.8.0"
-ksp = "2.0.0-1.0.24"
-accompanist-swiperefresh = "0.34.0"
-vico = "2.2.0-alpha.1"
+
+# Coroutines
+coroutines = "1.9.0"
+
+# UI
+material = "1.13.0"
+constraintlayout = "2.2.0"
+
+# Charts
+vico = "2.0.0-alpha.19"
+
+# Image
+coil = "2.7.0"
+
+# Database encryption
+sqlcipher = "4.6.1"
+sqlite-ktx = "2.4.0"
+
+# Logging
+timber = "5.0.1"
+
+# CSV/Excel
+opencsv = "5.9"
+fast-excel = "1.1.0"
+
+# Testing
+junit = "4.13.2"
+junit-ext = "1.2.1"
+espresso = "3.6.1"
+mockk = "1.13.14"
+turbine = "1.2.0"
 
 [libraries]
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+# AndroidX Core
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
-viewpager2 = { group = "androidx.viewpager2", name = "viewpager2", version.ref = "viewpager2" }
-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycle" }
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
+
+# Lifecycle
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
-gridlayout = { group = "androidx.gridlayout", name = "gridlayout", version.ref = "gridlayout" }
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
 
 # Compose BOM
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
@@ -49,36 +73,77 @@ compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-compose-activity = { group = "androidx.activity", name = "activity-compose" }
-compose-lifecycle = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose" }
+compose-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
 compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata" }
 
 # Navigation
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 
+# Room
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+
+# DataStore
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+# WorkManager
+work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+
+# Paging
+paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
+
+# App Startup
+startup-runtime = { group = "androidx.startup", name = "startup-runtime", version.ref = "startup" }
+
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
-
-# DataStore
-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hilt-navigation-compose" }
 
 # Coroutines
 coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
-# Accompanist
-accompanist-swiperefresh = { group = "com.google.accompanist", name = "accompanist-swiperefresh", version.ref = "accompanist-swiperefresh" }
+# Material
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
-# Vico Charts
+# Charts
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 
+# Image
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# SQLCipher
+sqlcipher = { group = "net.zetetic", name = "android-database-sqlcipher", version.ref = "sqlcipher" }
+sqlite-ktx = { group = "androidx.sqlite", name = "sqlite-ktx", version.ref = "sqlite-ktx" }
+
+# Logging
+timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+
+# CSV
+opencsv = { group = "com.opencsv", name = "opencsv", version.ref = "opencsv" }
+
+# Excel (FastExcel is lighter than Apache POI)
+fast-excel = { group = "com.dmitryborodin", name = "fast-excel", version.ref = "fast-excel" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit-ext" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+compose-ui-test = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-

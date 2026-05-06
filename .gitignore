@@ -19,3 +19,9 @@ local.properties
 
 # Auto-generated Gradle JVM config
 gradle/gradle-daemon-jvm.properties
+
+# Kotlin compiler errors
+.kotlin/
+
+# App build outputs
+app/build/
