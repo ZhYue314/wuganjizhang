@@ -169,7 +169,8 @@ fun BottomNavigationBar(navController: NavHostController, visible: Boolean = tru
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        modifier = Modifier.alpha(if (visible) 1f else 0f)
+        modifier = Modifier.alpha(if (visible) 1f else 0f),
+        containerColor = MaterialTheme.colorScheme.background
     ) {
         items.forEach { item ->
             NavigationBarItem(
