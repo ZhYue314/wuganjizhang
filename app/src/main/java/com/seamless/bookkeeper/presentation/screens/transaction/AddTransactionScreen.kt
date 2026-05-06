@@ -2,9 +2,6 @@
 
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,16 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +53,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.seamless.bookkeeper.data.local.entity.AccountEntity
+import com.seamless.bookkeeper.data.local.entity.CategoryEntity
 import com.seamless.bookkeeper.presentation.theme.Dimens
 import com.seamless.bookkeeper.presentation.theme.ExpenseLight
 import com.seamless.bookkeeper.presentation.theme.IncomeLight
@@ -104,6 +99,37 @@ fun AddTransactionScreen(
         )
     }
 
+    // Time picker overlay
+    if (showTimePicker) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .clickable { showTimePicker = false },
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            // Simplified - just a card with "取消" / "日期" / "确定"
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                    .clickable { }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(Dimens.md),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(onClick = { showTimePicker = false }) { Text("取消") }
+                    Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+                    TextButton(onClick = { showTimePicker = false }) { Text("确定") }
+                }
+                HorizontalDivider()
+                Text("选择日期", modifier = Modifier.padding(Dimens.md), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(100.dp))
+            }
+        }
+    }
+
     val typeIndex = AddTransactionViewModel.typeList.indexOf(state.type).coerceAtLeast(0)
     val pagerState = rememberPagerState(
         initialPage = AddTransactionViewModel.getPageForType(state.type),
@@ -115,289 +141,194 @@ fun AddTransactionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                var totalX = 0f
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        if (kotlin.math.abs(totalX) > 100f) {
-                            val types = AddTransactionViewModel.typeList
-                            val i = types.indexOf(state.type).coerceAtLeast(0)
-                            val n = if (totalX < 0) (i + 1).coerceAtMost(types.lastIndex)
-                            else (i - 1).coerceAtLeast(0)
-                            if (n != i) viewModel.setType(types[n])
+                    var totalX = 0f
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (kotlin.math.abs(totalX) > 100f) {
+                                val types = AddTransactionViewModel.typeList
+                                val i = types.indexOf(state.type).coerceAtLeast(0)
+                                val n = if (totalX < 0) (i + 1).coerceAtMost(types.lastIndex)
+                                else (i - 1).coerceAtLeast(0)
+                                if (n != i) viewModel.setType(types[n])
+                            }
+                            totalX = 0f
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            totalX += dragAmount
                         }
-                        totalX = 0f
-                    },
-                    onHorizontalDrag = { _, dragAmount ->
-                        totalX += dragAmount
-                    }
-                )
-            }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = Dimens.md, top = Dimens.sm, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+                    )
+                }
         ) {
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-            }
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, end = Dimens.md, top = Dimens.sm, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val scope = rememberCoroutineScope()
-                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
-                    val isSelected = state.type == type
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                val page = AddTransactionViewModel.getPageForType(type)
-                                scope.launch { pagerState.animateScrollToPage(page) }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) when (type) {
-                                "EXPENSE" -> ExpenseLight
-                                "INCOME" -> IncomeLight
-                                else -> TransferLight
-                            } else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                 }
-            }
-        }
-
-        HorizontalDivider()
-
-        LaunchedEffect(pagerState.currentPage) {
-            viewModel.setPage(pagerState.currentPage)
-        }
-
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = Dimens.md),
-            beyondViewportPageCount = 1
-        ) { page ->
-            val pageType = AddTransactionViewModel.getTypeForPage(page)
-            val cats = state.allCategories[pageType] ?: emptyList()
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(Modifier.height(Dimens.sm))
-                BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val itemW = 68.dp
-                    val availW = maxWidth
-                    val perRow = ((availW + 8.dp) / (itemW + 8.dp)).toInt().coerceAtLeast(1)
-                    val itemsW = itemW * perRow
-                    val remainW = availW - itemsW
-                    val evenGap = remainW / (perRow + 1f)
-                    val list = cats.take(12)
-                    val chunks = list.chunked(perRow)
-                    Column {
-                        for (idx in chunks.indices) {
-                            val chunk = chunks[idx]
-                            val full = chunk.size == perRow
-                            Row(
-                                modifier = Modifier.fillMaxWidth().then(
-                                    if (full) Modifier else Modifier.padding(start = evenGap)
-                                ),
-                                horizontalArrangement = if (full) Arrangement.SpaceEvenly
-                                else Arrangement.spacedBy(evenGap)
-                            ) {
-                                chunk.forEach { category ->
-                                    val isSelected = state.selectedCategory?.id == category.id
-                                    Column(
-                                        modifier = Modifier
-                                            .width(itemW)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(
-                                                if (isSelected) Color(category.color).copy(alpha = 0.15f)
-                                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                            )
-                                            .then(if (isSelected) Modifier.border(1.5.dp, Color(category.color), RoundedCornerShape(12.dp)) else Modifier)
-                                            .clickable { viewModel.setCategory(category) }
-                                            .padding(vertical = 8.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.size(36.dp).clip(CircleShape).background(
-                                                if (isSelected) Color(category.color) else MaterialTheme.colorScheme.surfaceVariant
-                                            ),
-                                            contentAlignment = Alignment.Center
-                                        ) { Text(category.icon, fontSize = 18.sp) }
-                                        Spacer(Modifier.height(2.dp))
-                                        Text(category.name, style = MaterialTheme.typography.bodySmall,
-                                            textAlign = TextAlign.Center, maxLines = 1,
-                                            color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface)
-                                    }
-                                }
-                            }
-                            if (idx < chunks.lastIndex) Spacer(Modifier.height(evenGap))
-                        }
-                    }
-                }
-            }
-        }
-
-        HorizontalDivider()
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .padding(horizontal = Dimens.md, vertical = 4.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = "¥ ${state.amount.ifBlank { "0.00" }}",
-                modifier = Modifier.padding(start = 16.dp),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = when (state.type) {
-                    "EXPENSE" -> ExpenseLight
-                    "INCOME" -> IncomeLight
-                    else -> TransferLight
-                }
-            )
-        }
-
-        HorizontalDivider()
-
-        NumericKeypad(
-            onDigit = { viewModel.appendDigit(it) },
-            onDelete = { viewModel.deleteLastDigit() },
-            onClear = { viewModel.clearAmount() },
-            onConfirm = {
-                if (state.amount.isNotBlank() && state.amount != "0") {
-                    viewModel.save(onDismiss)
-                }
-            },
-            onSaveAndAdd = {
-                if (state.amount.isNotBlank() && state.amount != "0") {
-                    viewModel.save { viewModel.clearAmount() }
-                }
-            }
-        )
-
-        HorizontalDivider()
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.md, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (state.type == "TRANSFER") {
-                AuxField("转出", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = true })
-                AuxField("转入", state.toAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = true })
-                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
-                AuxField("时间", dateStr, Modifier.weight(1f), onClick = { showTimePicker = true })
-            } else {
-                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = true })
-                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
-                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
-                AuxField("时间", dateStr, Modifier.weight(1f), onClick = { showTimePicker = true })
-            }
-        }
-
-        // Account picker expandable
-        AnimatedVisibility(
-            visible = showAccountPicker,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.md),
-                shape = RoundedCornerShape(Dimens.shapeMedium)
-            ) {
-                Column {
-                    state.accounts.forEach { account ->
-                        val sel = account.id == state.selectedAccount?.id
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.setSelectedAccount(account); showAccountPicker = false }
-                                .padding(horizontal = Dimens.md, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(account.name, style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                                color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                            if (sel) Text("✓", color = MaterialTheme.colorScheme.primary)
-                        }
-                        if (account != state.accounts.last()) HorizontalDivider()
-                    }
-                }
-            }
-        }
-        }
-
-        // Time picker overlay
-        if (showTimePicker) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable { showTimePicker = false },
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().clickable { },
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(Dimens.md),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                    val scope = rememberCoroutineScope()
+                    listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
+                        val isSelected = state.type == type
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    val page = AddTransactionViewModel.getPageForType(type)
+                                    scope.launch { pagerState.animateScrollToPage(page) }
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            TextButton(onClick = { showTimePicker = false }) { Text("取消") }
-                            Text("日期", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            TextButton(onClick = { showTimePicker = false }) { Text("确定") }
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) when (type) {
+                                    "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight; else -> TransferLight
+                                } else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        HorizontalDivider()
-                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = state.timestamp }
-                        val y = cal.get(java.util.Calendar.YEAR)
-                        val m = cal.get(java.util.Calendar.MONTH) + 1
-                        val d = cal.get(java.util.Calendar.DAY_OF_MONTH)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().height(200.dp).padding(Dimens.md),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            listOf("年", "月", "日").forEachIndexed { i, unit ->
-                                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(unit, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Spacer(Modifier.height(8.dp))
-                                    val values = when (i) { 0 -> (y - 5..y + 5).toList(); 1 -> (1..12).toList(); else -> (1..28).toList() }
-                                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                                        values.forEach { v ->
-                                            Text(
-                                                "$v",
-                                                Modifier.fillMaxWidth().clickable { }.padding(vertical = 6.dp),
-                                                textAlign = TextAlign.Center,
-                                                fontWeight = if (v == listOf(y, m, d)[i]) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (v == listOf(y, m, d)[i]) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                            )
+                    }
+                }
+            }
+
+            HorizontalDivider()
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = Dimens.md),
+                beyondViewportPageCount = 1
+            ) { page ->
+                val pageType = AddTransactionViewModel.getTypeForPage(page)
+                val cats = state.allCategories[pageType] ?: emptyList()
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Spacer(Modifier.height(Dimens.sm))
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val itemW = 68.dp
+                        val availW = maxWidth
+                        val perRow = ((availW + 8.dp) / (itemW + 8.dp)).toInt().coerceAtLeast(1)
+                        val itemsW = itemW * perRow
+                        val remainW = availW - itemsW
+                        val evenGap = remainW / (perRow + 1f)
+                        val list = cats.take(12)
+                        val chunks = list.chunked(perRow)
+                        Column {
+                            for (idx in chunks.indices) {
+                                val chunk = chunks[idx]
+                                val full = chunk.size == perRow
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().then(
+                                        if (full) Modifier else Modifier.padding(start = evenGap)
+                                    ),
+                                    horizontalArrangement = if (full) Arrangement.SpaceEvenly
+                                    else Arrangement.spacedBy(evenGap)
+                                ) {
+                                    chunk.forEach { category ->
+                                        val isSelected = state.selectedCategory?.id == category.id
+                                        Column(
+                                            modifier = Modifier
+                                                .width(itemW)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(
+                                                    if (isSelected) Color(category.color).copy(alpha = 0.15f)
+                                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                )
+                                                .then(if (isSelected) Modifier.border(1.5.dp, Color(category.color), RoundedCornerShape(12.dp)) else Modifier)
+                                                .clickable { viewModel.setCategory(category) }
+                                                .padding(vertical = 8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.size(36.dp).clip(CircleShape).background(
+                                                    if (isSelected) Color(category.color) else MaterialTheme.colorScheme.surfaceVariant
+                                                ),
+                                                contentAlignment = Alignment.Center
+                                            ) { Text(category.icon, fontSize = 18.sp) }
+                                            Spacer(Modifier.height(2.dp))
+                                            Text(category.name, style = MaterialTheme.typography.bodySmall,
+                                                textAlign = TextAlign.Center, maxLines = 1,
+                                                color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface)
                                         }
                                     }
                                 }
+                                if (idx < chunks.lastIndex) Spacer(Modifier.height(evenGap))
                             }
                         }
                     }
                 }
+            }
+
+            HorizontalDivider()
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(horizontal = Dimens.md, vertical = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = "¥ ${state.amount.ifBlank { "0.00" }}",
+                    modifier = Modifier.padding(start = 16.dp),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = when (state.type) {
+                        "EXPENSE" -> ExpenseLight; "INCOME" -> IncomeLight; else -> TransferLight
+                    }
+                )
+            }
+
+            HorizontalDivider()
+
+            // NumericKeypad with account picker support
+            NumericKeypad(
+                onDigit = { viewModel.appendDigit(it) },
+                onDelete = { viewModel.deleteLastDigit() },
+                onClear = { viewModel.clearAmount() },
+                onConfirm = {
+                    if (state.amount.isNotBlank() && state.amount != "0") {
+                        viewModel.save(onDismiss)
+                    }
+                },
+                onSaveAndAdd = {
+                    if (state.amount.isNotBlank() && state.amount != "0") {
+                        viewModel.save { viewModel.clearAmount() }
+                    }
+                },
+                accountPickerMode = showAccountPicker,
+                accountLabels = state.accounts.map { it.name },
+                onAccountClick = { idx ->
+                    state.accounts.getOrNull(idx)?.let { viewModel.setSelectedAccount(it) }
+                    showAccountPicker = false
+                }
+            )
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.md, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                AuxField("账户", state.selectedAccount?.name ?: "选择", Modifier.weight(1f), onClick = { showAccountPicker = !showAccountPicker })
+                AuxField("商户", state.merchantName.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showMerchantDialog = true })
+                AuxField("备注", state.note.ifBlank { "填写" }, Modifier.weight(1f), onClick = { showNoteDialog = true })
+                AuxField("时间", dateStr, Modifier.weight(1f), onClick = { showTimePicker = true })
             }
         }
     }
@@ -430,28 +361,48 @@ private fun NumericKeypad(
     onDelete: () -> Unit,
     onClear: () -> Unit,
     onConfirm: () -> Unit,
-    onSaveAndAdd: () -> Unit
+    onSaveAndAdd: () -> Unit,
+    accountPickerMode: Boolean = false,
+    accountLabels: List<String> = emptyList(),
+    onAccountClick: (Int) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        KeypadRow(listOf("1", "2", "3", "⌫"), onDigit, onDelete)
-        Spacer(Modifier.height(4.dp))
-        KeypadRow(listOf("4", "5", "6", "+"), onDigit, onDelete)
-        Spacer(Modifier.height(4.dp))
-        KeypadRow(listOf("7", "8", "9", "-"), onDigit, onDelete)
-        Spacer(Modifier.height(4.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Key(".", Modifier.weight(1f)) { onDigit(".") }
-            Key("0", Modifier.weight(1f)) { onDigit("0") }
-            ActionKey("再记", Modifier.weight(1f)) { onSaveAndAdd() }
-            PrimaryKey("完成", Modifier.weight(1f)) { onConfirm() }
+        val rows = listOf(
+            listOf("1", "2", "3", "⌫"),
+            listOf("4", "5", "6", "+"),
+            listOf("7", "8", "9", "-"),
+            listOf(".", "0", "再记", "完成")
+        )
+        rows.forEachIndexed { rowIdx, keys ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (accountPickerMode && rowIdx < accountLabels.size) {
+                    ActionKey(accountLabels[rowIdx], Modifier.weight(1f), bg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)) { onAccountClick(rowIdx) }
+                } else {
+                    val firstKey = keys[0]
+                    if (firstKey == "⌫") {
+                        Key(firstKey, Modifier.weight(1f), bg = MaterialTheme.colorScheme.surfaceVariant) { onDelete() }
+                    } else {
+                        Key(firstKey, Modifier.weight(1f)) { onDigit(firstKey) }
+                    }
+                }
+                for (col in 1..3) {
+                    val key = keys[col]
+                    when (key) {
+                        "⌫" -> Key(key, Modifier.weight(1f), bg = MaterialTheme.colorScheme.surfaceVariant) { onDelete() }
+                        "再记" -> ActionKey(key, Modifier.weight(1f)) { onSaveAndAdd() }
+                        "完成" -> PrimaryKey(key, Modifier.weight(1f)) { onConfirm() }
+                        else -> Key(key, Modifier.weight(1f)) { onDigit(key) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
         }
     }
 }
@@ -488,12 +439,12 @@ private fun Key(text: String, modifier: Modifier = Modifier, bg: Color = Materia
 }
 
 @Composable
-private fun ActionKey(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun ActionKey(text: String, modifier: Modifier = Modifier, bg: Color = MaterialTheme.colorScheme.surfaceVariant, onClick: () -> Unit) {
     Box(
         modifier = modifier
             .height(50.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(bg)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
