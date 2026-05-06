@@ -52,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.seamless.bookkeeper.presentation.theme.Dimens
 import com.seamless.bookkeeper.presentation.theme.ExpenseLight
 import com.seamless.bookkeeper.presentation.theme.IncomeLight
+import com.seamless.bookkeeper.presentation.theme.TransferLight
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -124,7 +125,7 @@ fun AddTransactionScreen(
                             color = if (isSelected) when (type) {
                                 "EXPENSE" -> ExpenseLight
                                 "INCOME" -> IncomeLight
-                                else -> MaterialTheme.colorScheme.primary
+                                else -> TransferLight
                             } else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -208,7 +209,7 @@ fun AddTransactionScreen(
                 color = when (state.type) {
                     "EXPENSE" -> ExpenseLight
                     "INCOME" -> IncomeLight
-                    else -> MaterialTheme.colorScheme.onSurface
+                    else -> TransferLight
                 }
             )
         }
