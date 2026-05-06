@@ -105,9 +105,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Scaffold(
                 modifier = modifier,
                 bottomBar = {
-                    if (drawerEnabled) {
-                        BottomNavigationBar(navController = navController)
-                    }
+                    BottomNavigationBar(navController = navController)
                 }
             ) { innerPadding ->
             NavHost(
@@ -115,7 +113,11 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 startDestination = BottomNavItem.Home.route,
                 modifier = Modifier.padding(innerPadding)
             ) {
-                composable(BottomNavItem.Home.route) {
+                composable(
+                    route = BottomNavItem.Home.route,
+                    exitTransition = { slideOutHorizontally(tween(300)) { -it } },
+                    popEnterTransition = { slideInHorizontally(tween(300)) { -it } }
+                ) {
                     HomeScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onSearchClick = { navController.navigate(Routes.SEARCH) },
