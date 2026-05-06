@@ -63,15 +63,22 @@ fun AddTransactionScreen(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                detectHorizontalDragGestures { _, dragAmount ->
-                    if (kotlin.math.abs(dragAmount) > 80f) {
-                        val types = AddTransactionViewModel.typeList
-                        val i = types.indexOf(state.type).coerceAtLeast(0)
-                        val n = if (dragAmount < 0) (i + 1).coerceAtMost(types.lastIndex)
-                        else (i - 1).coerceAtLeast(0)
-                        if (n != i) viewModel.setType(types[n])
+                var totalX = 0f
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (kotlin.math.abs(totalX) > 100f) {
+                            val types = AddTransactionViewModel.typeList
+                            val i = types.indexOf(state.type).coerceAtLeast(0)
+                            val n = if (totalX < 0) (i + 1).coerceAtMost(types.lastIndex)
+                            else (i - 1).coerceAtLeast(0)
+                            if (n != i) viewModel.setType(types[n])
+                        }
+                        totalX = 0f
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        totalX += dragAmount
                     }
-                }
+                )
             }
     ) {
         Row(
@@ -85,23 +92,28 @@ fun AddTransactionScreen(
             }
             Row(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEachIndexed { index, (label, type) ->
+                listOf("支出" to "EXPENSE", "收入" to "INCOME", "转账" to "TRANSFER").forEach { (label, type) ->
                     val isSelected = state.type == type
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) when (type) {
-                            "EXPENSE" -> ExpenseLight
-                            "INCOME" -> IncomeLight
-                            else -> MaterialTheme.colorScheme.primary
-                        } else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.clickable {
-                            viewModel.setType(type)
-                        }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { viewModel.setType(type) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) when (type) {
+                                "EXPENSE" -> ExpenseLight
+                                "INCOME" -> IncomeLight
+                                else -> MaterialTheme.colorScheme.primary
+                            } else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
