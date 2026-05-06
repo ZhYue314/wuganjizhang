@@ -217,37 +217,36 @@ fun OverviewCard(
         ),
         shape = RoundedCornerShape(Dimens.shapeLarge)
     ) {
-        Column(modifier = Modifier.padding(Dimens.lg)) {
+        Column(modifier = Modifier.padding(Dimens.md)) {
             Text(
                 text = "本月结余",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = viewModel.formatAmount(balance),
+                style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Spacer(modifier = Modifier.height(Dimens.sm))
-            Text(
-                text = viewModel.formatAmount(balance),
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.height(Dimens.md))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("支出", style = MaterialTheme.typography.bodySmall)
+                    Text("支出", style = MaterialTheme.typography.labelMedium)
                     Text(
                         viewModel.formatAmount(expense),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = ExpenseLight,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("收入", style = MaterialTheme.typography.bodySmall)
+                    Text("收入", style = MaterialTheme.typography.labelMedium)
                     Text(
                         viewModel.formatAmount(income),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = IncomeLight,
                         fontWeight = FontWeight.Bold
                     )
