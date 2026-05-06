@@ -96,31 +96,27 @@ fun AddTransactionScreen(
 
         HorizontalDivider()
 
-        Column(
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Dimens.md)
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures { _, dragAmount ->
-                        if (kotlin.math.abs(dragAmount) > 100f) {
-                            val types = AddTransactionViewModel.typeList
-                            val currentIndex = types.indexOf(state.type).coerceAtLeast(0)
-                            val nextIndex = if (dragAmount < 0) {
-                                (currentIndex + 1).coerceAtMost(types.lastIndex)
-                            } else {
-                                (currentIndex - 1).coerceAtLeast(0)
-                            }
-                            if (nextIndex != currentIndex) {
-                                viewModel.setType(types[nextIndex])
-                            }
-                        }
-                    }
-                }
         ) {
             Spacer(Modifier.height(Dimens.sm))
             FlowRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures { _, dragAmount ->
+                            if (kotlin.math.abs(dragAmount) > 80f) {
+                                val types = AddTransactionViewModel.typeList
+                                val i = types.indexOf(state.type).coerceAtLeast(0)
+                                val n = if (dragAmount < 0) (i + 1).coerceAtMost(types.lastIndex)
+                                else (i - 1).coerceAtLeast(0)
+                                if (n != i) viewModel.setType(types[n])
+                            }
+                        }
+                    },
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -134,32 +130,21 @@ fun AddTransactionScreen(
                                 if (isSelected) Color(category.color).copy(alpha = 0.15f)
                                 else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             )
-                            .then(
-                                if (isSelected) Modifier.border(
-                                    1.5.dp, Color(category.color), RoundedCornerShape(12.dp)
-                                ) else Modifier
-                            )
+                            .then(if (isSelected) Modifier.border(1.5.dp, Color(category.color), RoundedCornerShape(12.dp)) else Modifier)
                             .clickable { viewModel.setCategory(category) }
                             .padding(vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(36.dp).clip(CircleShape)
-                                .background(
-                                    if (isSelected) Color(category.color)
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                ),
+                            modifier = Modifier.size(36.dp).clip(CircleShape).background(
+                                if (isSelected) Color(category.color) else MaterialTheme.colorScheme.surfaceVariant
+                            ),
                             contentAlignment = Alignment.Center
                         ) { Text(category.icon, fontSize = 18.sp) }
                         Spacer(Modifier.height(2.dp))
-                        Text(
-                            category.name,
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface
-                        )
+                        Text(category.name, style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center, maxLines = 1,
+                            color = if (isSelected) Color(category.color) else MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
